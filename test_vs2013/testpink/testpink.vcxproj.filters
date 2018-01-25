@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{52cace27-d7c1-4807-b855-d7012f1bc4ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\text">
+      <UniqueIdentifier>{fb136600-913a-43d7-9e6a-8d2074645334}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="testsource">
+      <UniqueIdentifier>{25f145b8-9111-48b6-a36e-e7eb0f3b61eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{953e2037-263b-443c-8df1-2ece88320593}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -24,6 +36,9 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\text\dbc_sbc.h">
+      <Filter>include\text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -31,6 +46,12 @@
     </ClCompile>
     <ClCompile Include="testpink.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testsource\test_text.cpp">
+      <Filter>testsource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testsource\test_format.cpp">
+      <Filter>testsource</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

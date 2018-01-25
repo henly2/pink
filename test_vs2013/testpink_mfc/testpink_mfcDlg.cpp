@@ -97,6 +97,29 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
+    HWND hwnd = GetSafeHwnd();
+
+    CRect rt;
+    GetClientRect(&rt);
+    ClientToScreen(&rt);
+
+    // 下面去除标题边框代码在经典模式下有问题
+    // 假如原来的位置
+    ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), FALSE);
+    // 去掉标题边框
+    ::SetWindowLong(hwnd, GWL_STYLE, ::GetWindowLong(hwnd, GWL_STYLE)&(~(WS_BORDER | WS_CAPTION)));
+    // 如果位置和原来一样，经典模式下被优化，造成没有生效，直到下次的OnSize才会生效
+    ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), TRUE);
+
+    // 下面去除标题边框代码在经典模式下可以
+    /*
+    // 假如原来的位置
+    ::MoveWindow(hwnd, rt.left, rt.top, rt.Width()-1, rt.Height()-1, FALSE);
+    // 去掉标题边框
+    ::SetWindowLong(hwnd, GWL_STYLE, ::GetWindowLong(hwnd, GWL_STYLE)&(~(WS_BORDER | WS_CAPTION)));
+    // 如果位置和原来一样，经典模式下被优化，造成没有生效，直到下次的OnSize才会生效
+    ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), TRUE);
+    */
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
