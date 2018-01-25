@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{d7a08e6b-9b56-4ebc-b3b5-ab3c29cb16f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\cpt">
+      <UniqueIdentifier>{8b1c56c9-2977-445d-ae2a-99ce9a1f981f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -30,6 +36,12 @@
     <ClInclude Include="testpink_win32.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\cpt\CrossProcessComm.h">
+      <Filter>source\cpt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\cpt\CrossProcessText.h">
+      <Filter>source\cpt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -37,6 +49,9 @@
     </ClCompile>
     <ClCompile Include="testpink_win32.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\cpt\CrossProcessText.cpp">
+      <Filter>source\cpt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

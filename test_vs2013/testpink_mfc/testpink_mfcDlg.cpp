@@ -7,10 +7,55 @@
 #include "testpink_mfcDlg.h"
 #include "afxdialogex.h"
 
+#include "../source/cpt/CrossProcessComm.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+// https://www.codeproject.com/tips/76427/how-to-bring-window-to-top-with-setforegroundwindo
+/*
+当一个进程不是处于输入焦点的情况下，自己在某种情况下想置顶并获取输入焦点是不被允许的；
+因为这样的情况会打乱用户的操作，所以一般都是会在任务栏闪烁来通知用户自己选择；
+当然下面的ActiveThisProcessToForeground可以强制完成。
+
+我们还会遇到另外一种情况，比如：2个进程是相关的，当一个进程在操作时，我是希望将第二个获取输入焦点的，试试以下逻辑：
+1. 进程1设置允许进程2获取焦点
+2. 进程2SetForegroundWindow
+3. 焦点可以获取，但是如果是输入的话，2边如果一边是中文输入，一边是英文输入，就会有衔接不好的情况，而且进程1如果是中文的话，输入法框还一直存在。。。
+4. 也可用用cpt目录下的方法，在进程1创建一个隐藏的edit，当输入变化时，将文本copydata到进程2，还是无法解决2边输入法不一致的缺陷
+*/
+
+// 不推荐使用
+void ActiveThisProcessToForeground(HWND hWnd)
+{
+    if (!::IsWindow(hWnd)) return;
+
+    //relation time of SetForegroundWindow lock
+    DWORD lockTimeOut = 0;
+    HWND  hCurrWnd = ::GetForegroundWindow();
+    DWORD dwThisTID = ::GetCurrentThreadId(),
+        dwCurrTID = ::GetWindowThreadProcessId(hCurrWnd, 0);
+
+    //we need to bypass some limitations from Microsoft :)
+    if (dwThisTID != dwCurrTID)
+    {
+        ::AttachThreadInput(dwThisTID, dwCurrTID, TRUE);
+
+        ::SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &lockTimeOut, 0);
+        ::SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, 0, SPIF_SENDWININICHANGE | SPIF_UPDATEINIFILE);
+
+        ::AllowSetForegroundWindow(ASFW_ANY);
+    }
+
+    ::SetForegroundWindow(hWnd);
+
+    if (dwThisTID != dwCurrTID)
+    {
+        ::SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, (PVOID)lockTimeOut, SPIF_SENDWININICHANGE | SPIF_UPDATEINIFILE);
+        ::AttachThreadInput(dwThisTID, dwCurrTID, FALSE);
+    }
+}
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -62,6 +107,8 @@ BEGIN_MESSAGE_MAP(Ctestpink_mfcDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+    ON_MESSAGE(1217, OnReceiveNotify)
+    ON_WM_COPYDATA()
 END_MESSAGE_MAP()
 
 
@@ -97,12 +144,15 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
-    HWND hwnd = GetSafeHwnd();
+    SetWindowText(_T("Ctestpink_mfcDlg"));
+
+    m_edit.Create(ES_MULTILINE | WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER,
+        CRect(10, 10, 100, 100), this, 1);
 
     CRect rt;
     GetClientRect(&rt);
     ClientToScreen(&rt);
-
+    HWND hwnd = GetSafeHwnd();
     // 下面去除标题边框代码在经典模式下有问题
     // 假如原来的位置
     ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), FALSE);
@@ -173,3 +223,51 @@ HCURSOR Ctestpink_mfcDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+LRESULT Ctestpink_mfcDlg::OnReceiveNotify(WPARAM wParam, LPARAM lParam)
+{
+    //ActiveThisProcessToForeground(this->GetSafeHwnd());
+    ::SetForegroundWindow(this->GetSafeHwnd());
+    m_edit.SetFocus();
+
+    // Simulate a key press
+    keybd_event(lParam,
+        0x45,
+        KEYEVENTF_EXTENDEDKEY | 0,
+        0);
+
+    // Simulate a key release
+    keybd_event(lParam,
+        0x45,
+        KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+        0);
+
+//     char nChar = (char)wParam;
+//     CString text;
+//     m_edit.GetWindowText(text);
+//     text.AppendChar(nChar);
+//     m_edit.SetWindowText(text);
+//     m_edit.SetSel(text.GetLength(), text.GetLength());
+    return 0;
+}
+
+BOOL Ctestpink_mfcDlg::OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct)
+{
+    COPYDATASTRUCT* myCDS = pCopyDataStruct;
+    if (myCDS->dwData == CPID_Text)
+    {
+        SetForegroundWindow();
+        ActivateTopParent();
+        SetFocus();
+        m_edit.SetFocus();
+
+        CString oldtext;
+        m_edit.GetWindowText(oldtext);
+
+        CString text;// = ((CrossProcessData_Text*)myCDS->lpData)->text;
+        oldtext += text;
+        m_edit.SetWindowText(oldtext);
+        m_edit.SetSel(oldtext.GetLength(), oldtext.GetLength());
+    }
+
+    return TRUE;
+}

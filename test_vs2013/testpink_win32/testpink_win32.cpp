@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "testpink_win32.h"
 
+#include "../source/cpt/CrossProcessText.h"
+
 #define MAX_LOADSTRING 100
 
 // 全局变量: 
@@ -16,6 +18,8 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+
+ChildTextHolder m_textholder;
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -107,6 +111,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   m_textholder.CreateEdit(hWnd, 1);
+   HWND hmain = ::FindWindow(NULL, _T("Ctestpink_mfcDlg"));
+   m_textholder.SetMainHwnd(hmain);
+
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
@@ -152,6 +160,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// TODO:  在此添加任意绘图代码...
 		EndPaint(hWnd, &ps);
 		break;
+    case WM_KEYDOWN:
+    {
+        // 打开使用
+        m_textholder.OnKeyDown(wParam, lParam);
+
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+        break;
+    case WM_KEYUP:
+    {
+        // 打开使用
+        /*
+        int vk = 0;
+        if (wParam >= 0x41 && wParam <= 0x5a)
+        {
+            vk = wParam;
+        }
+        HWND hmain = ::FindWindow(NULL, _T("Ctestpink_mfcDlg"));
+        DWORD mainPid = 0;
+        ::GetWindowThreadProcessId(hmain, &mainPid);
+        if (mainPid != 0)
+        {
+            ::AllowSetForegroundWindow(mainPid);
+
+            ::PostMessage(hmain, 1217, (WPARAM)nullptr, (LPARAM)vk);
+        }
+        */
+
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+        break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
