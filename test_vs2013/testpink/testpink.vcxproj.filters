@@ -39,6 +39,9 @@
     <ClInclude Include="..\..\include\text\dbc_sbc.h">
       <Filter>include\text</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\text\spliter.h">
+      <Filter>include\text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +54,12 @@
       <Filter>testsource</Filter>
     </ClCompile>
     <ClCompile Include="..\testsource\test_format.cpp">
+      <Filter>testsource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testsource\test_spliter.cpp">
+      <Filter>testsource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testsource\test_bind.cpp">
       <Filter>testsource</Filter>
     </ClCompile>
   </ItemGroup>

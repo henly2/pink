@@ -8,11 +8,13 @@
 #include "afxdialogex.h"
 
 #include "../source/cpt/CrossProcessComm.h"
+#include "../include/log/console_log.hpp"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+//////////////////////////////////////////////////////////////////////////
 // https://www.codeproject.com/tips/76427/how-to-bring-window-to-top-with-setforegroundwindo
 /*
 当一个进程不是处于输入焦点的情况下，自己在某种情况下想置顶并获取输入焦点是不被允许的；
@@ -57,12 +59,20 @@ void ActiveThisProcessToForeground(HWND hWnd)
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+extern void test_start_thread();
+extern void test_stop_thread();
+
+extern void test_bind_main();
+extern void test_virtual_main();
+
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg();
+    ~CAboutDlg();
 
 // 对话框数据
 	enum { IDD = IDD_ABOUTBOX };
@@ -77,6 +87,11 @@ protected:
 
 CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
 {
+    test_start_thread();
+}
+CAboutDlg::~CAboutDlg()
+{
+    test_stop_thread();
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
@@ -96,6 +111,8 @@ Ctestpink_mfcDlg::Ctestpink_mfcDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(Ctestpink_mfcDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+    util::Console_log::ins().init();
 }
 
 void Ctestpink_mfcDlg::DoDataExchange(CDataExchange* pDX)
@@ -154,12 +171,14 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     ClientToScreen(&rt);
     HWND hwnd = GetSafeHwnd();
     // 下面去除标题边框代码在经典模式下有问题
+    /*
     // 假如原来的位置
     ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), FALSE);
     // 去掉标题边框
     ::SetWindowLong(hwnd, GWL_STYLE, ::GetWindowLong(hwnd, GWL_STYLE)&(~(WS_BORDER | WS_CAPTION)));
     // 如果位置和原来一样，经典模式下被优化，造成没有生效，直到下次的OnSize才会生效
     ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), TRUE);
+    */
 
     // 下面去除标题边框代码在经典模式下可以
     /*
@@ -170,6 +189,10 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 如果位置和原来一样，经典模式下被优化，造成没有生效，直到下次的OnSize才会生效
     ::MoveWindow(hwnd, rt.left, rt.top, rt.Width(), rt.Height(), TRUE);
     */
+
+
+    //test_bind_main();
+    test_virtual_main();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -229,14 +252,15 @@ LRESULT Ctestpink_mfcDlg::OnReceiveNotify(WPARAM wParam, LPARAM lParam)
     ::SetForegroundWindow(this->GetSafeHwnd());
     m_edit.SetFocus();
 
+    BYTE vk = static_cast<BYTE>(lParam);
     // Simulate a key press
-    keybd_event(lParam,
+    keybd_event(vk,
         0x45,
         KEYEVENTF_EXTENDEDKEY | 0,
         0);
 
     // Simulate a key release
-    keybd_event(lParam,
+    keybd_event(vk,
         0x45,
         KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
         0);

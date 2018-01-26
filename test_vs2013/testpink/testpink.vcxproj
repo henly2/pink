@@ -82,11 +82,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\text\dbc_sbc.h" />
+    <ClInclude Include="..\..\include\text\spliter.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\testsource\test_bind.cpp" />
     <ClCompile Include="..\testsource\test_format.cpp" />
+    <ClCompile Include="..\testsource\test_spliter.cpp" />
     <ClCompile Include="..\testsource\test_text.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
