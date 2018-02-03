@@ -2,7 +2,14 @@
 
 #include <functional>
 
-typedef std::tr1::function<void(void*)> XOperator;
+#if(_MSC_VER >= 1900)
+//vs2017
+using std::function;
+#else
+using std::tr1::function;
+#endif
+
+typedef function<void(void*)> XOperator;
 
 // [[ 1
 template <typename T>
