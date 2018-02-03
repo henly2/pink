@@ -246,6 +246,7 @@ namespace boost_http {
 
 			void callback(int status, const std::string& msg)
 			{
+				++http_response_.data_times;
 				http_response_.http_status = status;
 				http_response_.errmsg = msg;
 

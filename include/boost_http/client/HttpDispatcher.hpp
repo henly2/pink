@@ -2,6 +2,7 @@
 #define HttpDispatcher_h__
 
 #include <iostream>
+#include <fstream>
 
 #include <sstream>
 #include <algorithm>
@@ -24,10 +25,19 @@
 #include "HttpClient.hpp"
 #include "HttpClientSync.hpp"
 
+//#define NOT_FILE_LOG
+#ifdef NOT_FILE_LOG
 static std::ostream& piwikLogDetail(const char* tag) {
 	std::cout << "[" << tag << "]";
 	return std::cout;
 }
+#else
+static std::ofstream& piwikLogDetail(const char* tag) {
+	static std::ofstream file("log.txt");
+	file << "[" << tag << "]";
+	return file;
+}
+#endif
 
 namespace boost_http {
 	namespace client {
@@ -85,15 +95,18 @@ namespace boost_http {
 				bstop_ = true;
 				timer_.cancel();
 
-				io_service_.stop();
+				_CancelUserAll();
+				_CancelRequestAll();
+				_CancelClientAll();
 
+				io_service_.stop();
 				if (needwait)
 				{
 					for (auto it = thread_vec_.cbegin(); it != thread_vec_.cend(); ++it)
 					{
 						(*it)->join();
 					}
-				}
+				}	
 
 				piwikLogDetail("Info") << "HttpDispatcher Stop end..." << "\n";
 			}
@@ -152,6 +165,7 @@ namespace boost_http {
 			{
 				_CancelUserAll();
 				_CancelRequestAll();
+				_CancelClientAll();
 				_RemoveClientAll();
 			}
 
@@ -187,7 +201,7 @@ namespace boost_http {
 				}
 
 				size_t clt_count = _CountClient();
-				for (size_t i = clt_count; i <= thread_num_; i++)
+				for (size_t i = clt_count; i < thread_num_; i++)
 				{
 					// get first item
 					HttpRequest request;
@@ -216,7 +230,8 @@ namespace boost_http {
 
 			void OnHttpCallback(const HttpRequest& request, int requestid, const HttpResponse& response)
 			{
-				piwikLogDetail("Info") << "callback..." << requestid << "-" << response.http_status << "-" << response.errmsg << "\n";
+				piwikLogDetail("Info") << "callback..." << requestid << "-" << request.url << "-"
+					<< response.http_status << "-" << response.errmsg << "\n";
 
 				if (response.http_status == 206 && request.responseonce == false) {
 					_CallbackUser(request, requestid, response);
@@ -397,6 +412,16 @@ namespace boost_http {
 				http_clients_.insert(std::make_pair(requestid, c));
 			}
 
+			void _CancelClient(int requestid)
+			{
+				boost::unique_lock<boost::mutex> lock(mutex_client_);
+				auto it = http_clients_.find(requestid);
+				if (it != http_clients_.end())
+				{
+					it->second->Cancel();
+				}
+			}
+
 			void _RemoveClient(int requestid)
 			{
 				boost::unique_lock<boost::mutex> lock(mutex_client_);
@@ -407,20 +432,19 @@ namespace boost_http {
 				}
 			}
 
+			void _CancelClientAll()
+			{
+				boost::unique_lock<boost::mutex> lock(mutex_client_);
+				for (auto it = http_clients_.begin(); it != http_clients_.end(); it++)
+				{
+					it->second->Cancel();
+				}
+			}
+
 			void _RemoveClientAll()
 			{
 				boost::unique_lock<boost::mutex> lock(mutex_client_);
 				http_clients_.clear();
-			}
-
-			void _CancelClient(int requestid)
-			{
-				boost::unique_lock<boost::mutex> lock(mutex_client_);
-				auto it = http_clients_.find(requestid);
-				if (it != http_clients_.end())
-				{
-					it->second->Cancel();
-				}
 			}
 
 			size_t _CountClient()

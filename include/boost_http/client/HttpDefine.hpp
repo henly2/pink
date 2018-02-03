@@ -101,9 +101,11 @@ namespace boost_http {
 			std::string errmsg;					// err message
 			std::string header;					// http header
 			std::string data;					// http data, maybe many time by HttpRequest.responseonce
+			int data_times;						// receive data times
 
 			HttpResponse()
 				: http_status(0)
+				, data_times(0)
 			{
 			}
 		};

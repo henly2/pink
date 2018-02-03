@@ -38,70 +38,147 @@ void test_uri()
 
 }
 
-void test_http()
+int async_query_content(const std::string& url, std::string& content)
 {
 	HttpRequest hr;
-	// get content
 	hr.responseonce = true;
-	hr.url = "http://120.27.29.217:82/";
-	Http_ResponseCallback cb = [](const HttpRequest& request, int requestid, const HttpResponse& response) {
+	hr.url = url;
+	Http_ResponseCallback cb = [&content](const HttpRequest& request, int requestid, const HttpResponse& response) {
 		std::cout << response.http_status << std::endl;
 		if (response.http_status == 200) {
-			//std::cout << response.header << std::endl;
-			std::cout << response.data << std::endl;
-		}
-		else {
-			std::cout << response.errmsg << std::endl;
+			content = response.data;
+			std::cout << "content:<" << requestid << ">" << content << std::endl;
 		}
 	};
 	// async
-	HttpDispatcher::Inst().AddRequest(hr, cb);
+	return HttpDispatcher::Inst().AddRequest(hr, cb);
+}
 
-	// sync
-	//HttpClientSync cltsync(HttpDispatcher::Inst().GetIoService(), hr, 0, cb);
-	//cltsync.Start();
+bool sync_query_content(const std::string& url, std::string& content)
+{
+	HttpRequest hr;
+	hr.responseonce = true;
+	hr.url = url;
 
-	// download file
+	bool ret = false;
+	Http_ResponseCallback cb = [&content, &ret](const HttpRequest& request, int requestid, const HttpResponse& response) {
+		std::cout << response.http_status << std::endl;
+		if (response.http_status == 200) {
+			content = response.data;
+			std::cout << "content:" << content << std::endl;
+			ret = true;
+		}
+		else {
+			ret = false;
+		}
+	};
+	HttpClientSync cltsync(HttpDispatcher::Inst().GetIoService(), hr, 0, cb);
+	cltsync.Start();
+	
+	return ret;
+}
+
+bool sync_download_file(const std::string& url, const std::string& path)
+{
+	HttpRequest hr;
 	hr.responseonce = false;
-	hr.url = "http://120.27.29.217:82/testdownload.zip";
-	//hr.url = "http://120.27.29.217:82/rk.png";
-	Http_ResponseCallback cb1 = [](const HttpRequest& request, int requestid, const HttpResponse& response) {
+	hr.url = url;
+
+	bool ret = false;
+	Http_ResponseCallback cb = [&path, &ret](const HttpRequest& request, int requestid, const HttpResponse& response) {
 		//std::cout << response.http_status << std::endl;
 		if (response.http_status == 200) {
-			//std::cout << response.header << std::endl;
-			//std::cout << response.body << std::endl;
-
-			// write to file
-			//std::ofstream file("D:\\heng\\tmp.png", std::ios_base::out | std::ios_base::binary);
-
-			//file << response.data;
-			//std::cout << "write(" << response.data.size() << ")" << std::endl;
+			std::cout << "download fin" << std::endl;
+			ret = true;
 		}
 		else if (response.http_status == 206) {
-			//std::stringstream ss;
-			//ss << &response.body_stream;
-			//std::cout << "(" << response.body_stream.size() << ")" << ss.str() << std::endl;
-
 			// write to file
-			std::ofstream file("D:\\heng\\tmp.zip", std::ios_base::out | std::ios_base::binary | std::ios_base::app);
+			std::ofstream file;
+			if (response.data_times == 1) {
+				file.open(path, std::ios_base::out | std::ios_base::binary);
+			}
+			else {
+				file.open(path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
+			}
 
 			file.write(response.data.c_str(), response.data.length());
 			file.close();
-			//std::cout << "write(" << response.data.length() << ")" << std::endl;
 		}
 		else {
-			std::cout << response.errmsg << std::endl;
+			std::cout << "download error:" << response.errmsg << std::endl;
+			ret = false;
 		}
 	};
-	// async
-	//HttpDispatcher::Inst().AddRequest(hr, cb1);
-
-	// sync
-	HttpClientSync cltsync1(HttpDispatcher::Inst().GetIoService(), hr, 0, cb1);
+	HttpClientSync cltsync1(HttpDispatcher::Inst().GetIoService(), hr, 0, cb);
 	cltsync1.Start();
+
+	return ret;
+}
+
+int async_download_file(const std::string& url, const std::string& path)
+{
+	HttpRequest hr;
+	hr.responseonce = false;
+	hr.url = url;
+
+	Http_ResponseCallback cb = [path](const HttpRequest& request, int requestid, const HttpResponse& response) {
+		//std::cout << response.http_status << std::endl;
+		if (response.http_status == 200) {
+			std::cout << "download fin<" << requestid << ">" << std::endl;
+		}
+		else if (response.http_status == 206) {
+			// write to file
+			std::ofstream file;
+			if (response.data_times == 1) {
+				file.open(path, std::ios_base::out | std::ios_base::binary);
+			}
+			else {
+				file.open(path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
+			}
+			
+			file.write(response.data.c_str(), response.data.length());
+			file.close();
+		}
+		else {
+			std::cout << "download error:" << response.errmsg << std::endl;
+		}
+	};
+	return HttpDispatcher::Inst().AddRequest(hr, cb);
+}
+
+std::string g_content;
+void test_http()
+{
+	// query content
+	std::string url1 = "http://120.27.29.217:82/";
+	std::string url2 = "http://120.27.29.217:82/testdownload.zip";
+	std::string url3 = "http://120.27.29.217:82/rk.png";
+
+	for (int i = 1; i < 10; i++) {
+		async_query_content(url1, g_content);
+		async_download_file(url2, std::string("tmp\\") + std::to_string(i) + ".zip");
+		async_download_file(url3, std::string("tmp\\") + std::to_string(i) + ".png");
+	}
+	/*
+	std::string content;
+	sync_query_content(url1, content);
+	sync_download_file(url2, "d:\\heng\\tmp.zip");
+	sync_download_file(url3, "d:\\heng\\tmp.png");
+	*/
 }
 
 //////////////////////////////////////////////////////////////////////////
+void test_http_main2(const std::string& line)
+{
+	if (line.size() < 2)
+		return;
+
+	std::string p = line.substr(1, line.length() - 1);
+	HttpDispatcher::Inst().CancelRequest(atoi(p.c_str()));
+
+	std::cout << "cancel:" << p << std::endl;
+
+}
 void test_http_main()
 {
     std::cout << "begin..." << std::endl << std::endl;
@@ -121,7 +198,7 @@ void test_http_main()
 }
 void test_http_main_begin()
 {
-	HttpDispatcher::Inst().Start(2);
+	HttpDispatcher::Inst().Start(5);
 }
 void test_http_main_end()
 {
