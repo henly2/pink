@@ -154,13 +154,13 @@ void test_http()
 	std::string url2 = "http://120.27.29.217:82/testdownload.zip";
 	std::string url3 = "http://120.27.29.217:82/rk.png";
 
+	std::string content;
 	for (int i = 1; i < 10; i++) {
 		async_query_content(url1, g_content);
 		async_download_file(url2, std::string("tmp\\") + std::to_string(i) + ".zip");
 		async_download_file(url3, std::string("tmp\\") + std::to_string(i) + ".png");
 	}
 	/*
-	std::string content;
 	sync_query_content(url1, content);
 	sync_download_file(url2, "d:\\heng\\tmp.zip");
 	sync_download_file(url3, "d:\\heng\\tmp.png");
