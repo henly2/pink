@@ -25,8 +25,14 @@
     <Filter Include="source">
       <UniqueIdentifier>{953e2037-263b-443c-8df1-2ece88320593}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\http">
+    <Filter Include="include\boost_http">
       <UniqueIdentifier>{20549fb5-f269-4a96-9c97-179b9112ca69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\boost_http\client">
+      <UniqueIdentifier>{0492bbde-c0ef-4d67-a967-65c5d7bbc8df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\boost_http\util">
+      <UniqueIdentifier>{ac297173-e063-4d04-9632-3235aa3a51a5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,6 +50,21 @@
     </ClInclude>
     <ClInclude Include="..\..\include\text\spliter.h">
       <Filter>include\text</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\client\HttpClient.hpp">
+      <Filter>include\boost_http\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\client\HttpDefine.hpp">
+      <Filter>include\boost_http\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\client\HttpDispatcher.hpp">
+      <Filter>include\boost_http\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\util\SimpleUri.hpp">
+      <Filter>include\boost_http\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\client\HttpClientSync.hpp">
+      <Filter>include\boost_http\client</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -63,6 +84,9 @@
       <Filter>testsource</Filter>
     </ClCompile>
     <ClCompile Include="..\testsource\test_bind.cpp">
+      <Filter>testsource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\testsource\test_http.cpp">
       <Filter>testsource</Filter>
     </ClCompile>
   </ItemGroup>

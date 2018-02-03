@@ -1,146 +1,170 @@
-#ifndef SSSimpleUri_h__
-#define SSSimpleUri_h__
+#ifndef SimpleUri_h__
+#define SimpleUri_h__
 
 #include <string>
 #include <algorithm>
 #include <cctype>
 #include <functional>
 
-namespace util{
-    class SSSimpleUri {
-        struct Position
-        {
-            size_t left, right;
-            Position()
-                : left(0)
-                , right(0){
-            }
-            int count()const{
-                return right - left;
-            }
-        };
+using std::string;
 
-    public:
-        SSSimpleUri(){
-        }
+namespace boost_http {
+	namespace util {
+		static const string protocol_tag = "://";
+		static const string colon_tag = ":";
+		static const string slash_tag = "/";
+		class SimpleUri {
+			struct Position
+			{
+				size_t left, right;
+				Position()
+					: left(0)
+					, right(0) {
+				}
+				int count()const {
+					return right - left;
+				}
+				void reset() {
+					left = 0;
+					right = 0;
+				}
+			};
+			// 注意：这里只做简单的分割，以满足boost http的使用，有需求自行扩展
+			Position protocol_;     // http
+			Position host_;         // www.appinfo.com
+			Position port_;         // 88
+			Position path_;         // sample?example-query#frag
 
-        SSSimpleUri(const std::string& url)
-            :url_(url){
-            _parse();
-        }
+			string url_;       // http://www.appinf.com:88/sample?example-query#frag
 
-        ~SSSimpleUri()
-        {
-        }
+		public:
+			SimpleUri() {
+			}
 
-        void parse(const std::string& url){
-            url_ = url;
-            _parse();
-        }
+			SimpleUri(const string& url)
+				:url_(url) {
+				_parse();
+			}
 
-        const std::string& url()const{
-            return url_;
-        }
+			~SimpleUri()
+			{
+			}
 
-        std::string protocol() const {
-            return wrap(protocol_, "http");
-        }
+			void parse(const string& url) {
+				url_ = url;
+				reset();
+				_parse();
+			}
 
-        std::string host() const {
-            return wrap(host_);
-        }
+			const string& url()const {
+				return url_;
+			}
 
-        std::string port() const {
-            return wrap(port_, "80");
-        }
+			string protocol() const {
+				return wrap(protocol_, "http");
+			}
 
-        std::string path() const {
-            return wrap(path_);
-        }
+			string host() const {
+				return wrap(host_);
+			}
 
-    private:
+			string port() const {
+				return wrap(port_, "80");
+			}
 
-        size_t _split(size_t b_pos, const std::string& pp_end, Position& pp){
+			string path() const {
+				return wrap(path_, "/");
+			}
 
-            pp.left = b_pos;
-            pp.right = b_pos;
+		private:
 
-            if (pp_end.empty())
-            {
-                pp.right = url_.length();
-            }
-            else
-            {
-                std::string::const_iterator pp_i_b = url_.cbegin() + b_pos;
-                std::string::const_iterator pp_i_e = std::search(pp_i_b, url_.cend(),
-                    pp_end.cbegin(), pp_end.cend());
-                if (pp_i_e != url_.cend())
-                {
-                    pp.right = std::distance(url_.cbegin(), pp_i_e);
+			bool _split(size_t b_pos, const string& pp_end, Position& pp, bool notfindtoend = false) {
 
-                    if (pp.count()==0)
-                        std::cerr << "Err(" << pp_end << "):" << url_ << std::endl;
-                }
-            }
+				pp.left = b_pos;
+				pp.right = b_pos;
 
-            return pp.right + (pp.count() > 0 ? pp_end.length() : 0);
-        }
+				if (pp_end.empty())
+				{
+					pp.right = url_.length();
+				}
+				else
+				{
+					string::const_iterator pp_i_b = url_.cbegin() + b_pos;
+					string::const_iterator pp_i_e = std::search(pp_i_b, url_.cend(),
+						pp_end.cbegin(), pp_end.cend());
+					if (pp_i_e != url_.cend()){
+						pp.right = std::distance(url_.cbegin(), pp_i_e);
+					}
+					else if (notfindtoend) {
+						pp.right = url_.length();
+					}
+				}
 
-        void _parse()
-        {
-            if (url_.empty())
-                return;
+				// end
+				if (pp.right == url_.length()) {
+					return true;
+				}
 
-            std::transform(url_.begin(), url_.end(), url_.begin(), tolower);
+				return false;
+			}
 
-            size_t cur_pos = 0;
+			void _parse()
+			{
+				if (url_.empty())
+					return;
 
-            // protocol
-            const std::string prot_end("://");// can be none
-            cur_pos = _split(cur_pos, prot_end, protocol_);
-            
-            // host and port
-            // :
-            const std::string host_end_1(":");
-            cur_pos = _split(cur_pos, host_end_1, host_);
-            if (host_.count() > 0)
-            {
-                const std::string host_end_2("/"); // if not, can return
-                cur_pos = _split(cur_pos, host_end_2, port_);
-                if (port_.count() <= 0){
-                    port_.right = url_.size();
-                    return;
-                }
-            }
-            else
-            {
-                const std::string host_end_2("/"); // if not, can return
-                cur_pos = _split(cur_pos, host_end_2, host_);
-                if (host_.count() <= 0){
-                    host_.right = url_.size();
-                    return;
-                }
-            }
-            
-            // path
-            cur_pos = _split(cur_pos, "", path_);
-        }
+				std::transform(url_.begin(), url_.end(), url_.begin(), tolower);
 
-    private:
-        std::string wrap(const Position& position, const std::string& default = "")const{
-            return position.count() > 0 ? url_.substr(position.left, position.count()) : default;
-        }
+				size_t cur_pos = 0;
 
-    private:
-        std::string url_;       // http://www.appinf.com:88/sample?example-query#frag
+				// protocol
+				if (_split(cur_pos, protocol_tag, protocol_))
+					return;
+				if (protocol_.count() > 0) {
+					// find protocol
+					cur_pos += protocol_.count() + protocol_tag.length();
+				}
 
-        // 注意：这里只做简单的分割，以满足boost http的使用，有需求自行扩展
-        Position protocol_;     // http
-        Position host_;         // www.appinfo.com
-        Position port_;         // 88
-        Position path_;         // sample?example-query#frag
-    };
+				// host and port
+				if (_split(cur_pos, colon_tag, host_))
+					return;
+				if (host_.count() > 0)
+				{
+					// find host by colon, find port
+					cur_pos += host_.count() + colon_tag.length();
+					if (_split(cur_pos, slash_tag, port_, true))
+						return;
 
-} // namespace util
+					cur_pos += port_.count();
+				}
+				else
+				{
+					// find host by slash, no port
+					if (_split(cur_pos, slash_tag, host_, true))
+						return;
 
-#endif // SSSimpleUri_h__
+					cur_pos += host_.count();
+				}
+
+				// path
+				_split(cur_pos, "", path_);
+				
+			}
+
+		private:
+			string wrap(const Position& position, const string& default = "")const {
+				return position.count() > 0 ? url_.substr(position.left, position.count()) : default;
+			}
+
+			void reset() {
+				protocol_.reset();
+				host_.reset();
+				port_.reset();
+				path_.reset();
+			}
+		};
+
+	} // namespace util
+} // namespace boost_http
+
+#endif // SimpleUri_h__

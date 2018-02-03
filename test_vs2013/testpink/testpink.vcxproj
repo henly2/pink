@@ -53,11 +53,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);D:\lu\bocai\third\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\lu\bocai\third\lib\boost</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -82,6 +83,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\boost_http\client\HttpClient.hpp" />
+    <ClInclude Include="..\..\include\boost_http\client\HttpClientSync.hpp" />
+    <ClInclude Include="..\..\include\boost_http\client\HttpDefine.hpp" />
+    <ClInclude Include="..\..\include\boost_http\client\HttpDispatcher.hpp" />
+    <ClInclude Include="..\..\include\boost_http\util\SimpleUri.hpp" />
     <ClInclude Include="..\..\include\text\dbc_sbc.h" />
     <ClInclude Include="..\..\include\text\spliter.h" />
     <ClInclude Include="stdafx.h" />
@@ -90,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="..\testsource\test_bind.cpp" />
     <ClCompile Include="..\testsource\test_format.cpp" />
+    <ClCompile Include="..\testsource\test_http.cpp" />
     <ClCompile Include="..\testsource\test_spliter.cpp" />
     <ClCompile Include="..\testsource\test_text.cpp" />
     <ClCompile Include="stdafx.cpp">
