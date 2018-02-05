@@ -6,7 +6,7 @@
 
 #include <boost/function.hpp> 
 
-#define USE_CONSOLE_LOG
+//#define USE_CONSOLE_LOG
 #ifdef USE_CONSOLE_LOG
 #include <windows.h>
 static void _myprintf(const char* lev, const char *format, ...)

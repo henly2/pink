@@ -1,16 +1,8 @@
 #ifndef HttpDispatcher_h__
 #define HttpDispatcher_h__
 
-#include <iostream>
-#include <fstream>
-
-#include <sstream>
 #include <algorithm>
-#include <list>
-#include <deque>
 #include <vector>
-#include <set>
-#include <map>
 #include <unordered_map>
 
 #include <boost/bind.hpp>
@@ -77,6 +69,10 @@ namespace boost_http {
 			void Stop(bool needwait = true)
 			{
                 LOGINFO("HttpDispatcher Stop(%d) begin", needwait);
+                if (bstop_){
+                    LOGERR("HttpDispatcher already Stop");
+                    return;
+                }
 
 				bstop_ = true;
                 bwait_ = needwait;
@@ -98,6 +94,7 @@ namespace boost_http {
                 {
                     (*it)->join();
                 }
+                thread_vec_.clear();
 
                 LOGINFO("HttpDispatcher Stop(%d) end", needwait);
 			}
@@ -145,7 +142,7 @@ namespace boost_http {
 		protected:
 			HttpDispatcher()
 				: thread_num_(1)
-				, bstop_(false)
+				, bstop_(true)
                 , bwait_(false)
 				, timer_(io_service_)
 				, io_work_(io_service_)
@@ -295,7 +292,7 @@ namespace boost_http {
 
 			// users
 			boost::mutex mutex_user_;
-			std::map<int, UserInfo> users_;
+            std::unordered_map<int, UserInfo> users_;
 			// [[
 			void _AddUser(int requestid, Http_ResponseCallback cb)
 			{
@@ -410,7 +407,7 @@ namespace boost_http {
 
 			// http client
 			boost::mutex mutex_client_;
-			std::map<int, HttpClient_Ptr> http_clients_;
+            std::unordered_map<int, HttpClient_Ptr> http_clients_;
 			// [[
 			void _AddClient(int requestid, HttpClient_Ptr c)
 			{
