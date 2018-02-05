@@ -6,6 +6,33 @@
 
 #include <boost/function.hpp> 
 
+#define USE_CONSOLE_LOG
+#ifdef USE_CONSOLE_LOG
+#include <windows.h>
+static void _myprintf(const char* lev, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    SYSTEMTIME time;
+    GetLocalTime(&time);
+    char szBuffer[1024];
+    sprintf_s(szBuffer, "%02d%02d %02d:%02d:%02d.%03d [%d][%s]",
+        time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds, GetCurrentThreadId(), lev);
+    size_t len = strlen(szBuffer);
+    int nBuf = _vsnprintf_s(szBuffer + len, 1024 - len, _TRUNCATE, format, args);
+    
+    va_end(args);
+
+    printf(szBuffer);
+    printf("\n");
+}
+#define LOGINFO(format, ...) _myprintf("info", format, ##__VA_ARGS__);
+#define LOGDEBUG(format, ...) _myprintf("debug", format, ##__VA_ARGS__);
+#define LOGERR(format, ...) _myprintf("err", format, ##__VA_ARGS__);
+#else
+#endif
+
 namespace boost_http {
 	namespace client {
 		// status
@@ -24,7 +51,7 @@ namespace boost_http {
 			}
 		};
 		static std::unordered_map<int, HttpStatus> g_http_status;
-		const HttpStatus& GetHttpStatus(int code) {
+		static const HttpStatus& GetHttpStatus(int code) {
 			auto it = g_http_status.find(code);
 			if (it != g_http_status.end()){
 				return it->second;

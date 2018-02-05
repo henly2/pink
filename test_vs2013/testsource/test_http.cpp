@@ -6,11 +6,28 @@
 #include <fstream>
 
 #define BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
-#include "../include/boost_http/client/HttpDispatcher.hpp"
+#include "../include/boost_http/client/HttpExport.hpp"
 #include "../include/boost_http/util/SimpleUri.hpp"
 
 using namespace boost_http::util;
 using namespace boost_http::client;
+
+
+
+static std::string get_pathname(const std::string& path)
+{
+    std::string name(path);
+
+    size_t pos = path.find_last_of('/');
+    if (pos != std::string::npos)
+    {
+        name = path.substr(pos, path.length() - pos);
+    }
+
+    return name;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void test_uri()
 {
 	const char* urls[] = {
@@ -38,112 +55,69 @@ void test_uri()
 
 }
 
-int async_query_content(const std::string& url, std::string& content)
+//////////////////////////////////////////////////////////////////////////
+DWORD WINAPI upload1(LPVOID lpParam)
 {
-	HttpRequest hr;
-	hr.responseonce = true;
-	hr.url = url;
-	Http_ResponseCallback cb = [&content](const HttpRequest& request, int requestid, const HttpResponse& response) {
-		std::cout << response.http_status << std::endl;
-		if (response.http_status == 200) {
-			content = response.data;
-			std::cout << "content:<" << requestid << ">" << content << std::endl;
-		}
-	};
-	// async
-	return HttpDispatcher::Inst().AddRequest(hr, cb);
+    const char* paths[] = {
+        "/yezi/css/entry/images/obq5cu4g00.png",
+        "/yezi/css/entry/images/p4906ndnnk.jpg",
+        "/yezi/css/entry/images/obq8m0ensw.png"
+    };
+    int count = _countof(paths);
+    int i = 0;
+    std::string url = "172.16.8.140:8088";
+    std::string dir = "d:\\tmp";
+    while (i < count)
+    {
+        
+        std::string urlpath = url + paths[i++];
+        std::string path = dir + get_pathname(urlpath);
+
+        async_download_file(urlpath, path);
+    }
+
+    return 0;
 }
 
-bool sync_query_content(const std::string& url, std::string& content)
+DWORD WINAPI upload11(LPVOID lpParam)
 {
-	HttpRequest hr;
-	hr.responseonce = true;
-	hr.url = url;
+    const char* paths[] = {
+        "/yezi/css/entry/images/obq5cu4g00.png",
+        "/yezi/css/entry/images/p4906ndnnk.jpg",
+        "/yezi/css/entry/images/obq8m0ensw.png"
+    };
+    int count = _countof(paths);
+    int i = 0;
+    std::string url = "172.16.66.35:8088";
+    std::string dir = "d:\\tmp";
+    while (i < count)
+    {
 
-	bool ret = false;
-	Http_ResponseCallback cb = [&content, &ret](const HttpRequest& request, int requestid, const HttpResponse& response) {
-		std::cout << response.http_status << std::endl;
-		if (response.http_status == 200) {
-			content = response.data;
-			std::cout << "content:" << content << std::endl;
-			ret = true;
-		}
-		else {
-			ret = false;
-		}
-	};
-	HttpClientSync cltsync(HttpDispatcher::Inst().GetIoService(), hr, 0, cb);
-	cltsync.Start();
-	
-	return ret;
+        std::string urlpath = url + paths[i++];
+        std::string path = dir + get_pathname(urlpath);
+
+        async_download_file(urlpath, path);
+    }
+
+    return 0;
 }
 
-bool sync_download_file(const std::string& url, const std::string& path)
+DWORD WINAPI upload2(LPVOID lpParam)
 {
-	HttpRequest hr;
-	hr.responseonce = false;
-	hr.url = url;
+    int i = 0;
+    while (i++ < 10)
+    {
+        HttpRequest hr;
+        hr.url = "qa.east.idbhost.com/myapi/ic/listqb";
 
-	bool ret = false;
-	Http_ResponseCallback cb = [&path, &ret](const HttpRequest& request, int requestid, const HttpResponse& response) {
-		//std::cout << response.http_status << std::endl;
-		if (response.http_status == 200) {
-			std::cout << "download fin" << std::endl;
-			ret = true;
-		}
-		else if (response.http_status == 206) {
-			// write to file
-			std::ofstream file;
-			if (response.data_times == 1) {
-				file.open(path, std::ios_base::out | std::ios_base::binary);
-			}
-			else {
-				file.open(path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
-			}
+        Http_ResponseCallback cb = [](const HttpRequest& request, int requestid, const HttpResponse& response)
+        {
+            std::cout << "Content(" << response.http_status << "):" << response.data << "\n";
+        };
+        HttpDispatcher::Inst().AddRequest(hr, cb);
+    }
 
-			file.write(response.data.c_str(), response.data.length());
-			file.close();
-		}
-		else {
-			std::cout << "download error:" << response.errmsg << std::endl;
-			ret = false;
-		}
-	};
-	HttpClientSync cltsync1(HttpDispatcher::Inst().GetIoService(), hr, 0, cb);
-	cltsync1.Start();
-
-	return ret;
-}
-
-int async_download_file(const std::string& url, const std::string& path)
-{
-	HttpRequest hr;
-	hr.responseonce = false;
-	hr.url = url;
-
-	Http_ResponseCallback cb = [path](const HttpRequest& request, int requestid, const HttpResponse& response) {
-		//std::cout << response.http_status << std::endl;
-		if (response.http_status == 200) {
-			std::cout << "download fin<" << requestid << ">" << std::endl;
-		}
-		else if (response.http_status == 206) {
-			// write to file
-			std::ofstream file;
-			if (response.data_times == 1) {
-				file.open(path, std::ios_base::out | std::ios_base::binary);
-			}
-			else {
-				file.open(path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
-			}
-			
-			file.write(response.data.c_str(), response.data.length());
-			file.close();
-		}
-		else {
-			std::cout << "download error:" << response.errmsg << std::endl;
-		}
-	};
-	return HttpDispatcher::Inst().AddRequest(hr, cb);
+    return 0;
 }
 
 std::string g_content;
@@ -185,7 +159,10 @@ void test_http_main()
     
     try{
 		//test_uri();
-		test_http();
+		//test_http();
+        HANDLE h1 = CreateThread(NULL, NULL, upload1, NULL, 0, NULL);
+        HANDLE h11 = CreateThread(NULL, NULL, upload11, NULL, 0, NULL);
+        //HANDLE h2 = CreateThread(NULL, NULL, upload2, NULL, 0, NULL);
     }
     catch (const std::string& exp){
         std::cout << exp << std::endl;
@@ -198,9 +175,13 @@ void test_http_main()
 }
 void test_http_main_begin()
 {
-	HttpDispatcher::Inst().Start(5);
+    LOGINFO("test_http_main_begin1...");
+	HttpDispatcher::Inst().Start(3);
+    LOGINFO("test_http_main_begin2...");
 }
 void test_http_main_end()
 {
-	HttpDispatcher::Inst().Stop(true);
+    LOGINFO("test_http_main_end1...");
+	HttpDispatcher::Inst().Stop(false);
+    LOGINFO("test_http_main_end2...");
 }

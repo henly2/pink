@@ -25,20 +25,6 @@
 #include "HttpClient.hpp"
 #include "HttpClientSync.hpp"
 
-//#define NOT_FILE_LOG
-#ifdef NOT_FILE_LOG
-static std::ostream& piwikLogDetail(const char* tag) {
-	std::cout << "[" << tag << "]";
-	return std::cout;
-}
-#else
-static std::ofstream& piwikLogDetail(const char* tag) {
-	static std::ofstream file("log.txt");
-	file << "[" << tag << "]";
-	return file;
-}
-#endif
-
 namespace boost_http {
 	namespace client {
 		// Http调度器
@@ -68,7 +54,7 @@ namespace boost_http {
 			bool Start(unsigned int threadnum = 2)
 			{
 				thread_num_ = threadnum;
-				piwikLogDetail("Info") << "HttpDispatcher Start begin..." << thread_num_ << "\n";
+				LOGINFO("HttpDispatcher Start(%d) thread begin", thread_num_);
 
 				bstop_ = false;
 
@@ -83,41 +69,45 @@ namespace boost_http {
 						boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&boost::asio::io_service::run, &io_service_))));
 				}*/
 
-				piwikLogDetail("Info") << "HttpDispatcher Start end..." << "\n";
+                LOGINFO("HttpDispatcher Start(%d) thread end", thread_num_);
 
 				return thread_vec_.size() > 0;
 			}
 
 			void Stop(bool needwait = true)
 			{
-				piwikLogDetail("Info") << "HttpDispatcher Stop begin..." << "\n";
+                LOGINFO("HttpDispatcher Stop(%d) begin", needwait);
 
 				bstop_ = true;
-				timer_.cancel();
+                bwait_ = needwait;
 
-				_CancelUserAll();
-				_CancelRequestAll();
-				_CancelClientAll();
+                if (!bwait_)
+                {
+                    _CancelUserAll();
+                    _CancelRequestAll();
+                    _CancelClientAll();
 
-				io_service_.stop();
-				if (needwait)
-				{
-					for (auto it = thread_vec_.cbegin(); it != thread_vec_.cend(); ++it)
-					{
-						(*it)->join();
-					}
-				}	
+                    io_service_.stop();
+                }
+                else
+                {
+                    _RestartTimer(100);
+                }
 
-				piwikLogDetail("Info") << "HttpDispatcher Stop end..." << "\n";
+                for (auto it = thread_vec_.cbegin(); it != thread_vec_.cend(); ++it)
+                {
+                    (*it)->join();
+                }
+
+                LOGINFO("HttpDispatcher Stop(%d) end", needwait);
 			}
 
 			int AddRequest(const HttpRequest& request, Http_ResponseCallback cb)
 			{
-				piwikLogDetail("Info") << "HttpDispatcher add request..." << "\n";
 				if (bstop_)
 				{
-					piwikLogDetail("Err") << "HttpDispatcher is Stopped..." << "\n";
-					return -1;
+                    LOGERR("HttpDispatcher is Stopped...");
+					return 0;
 				}
 
 				int requestid = ++increase_id_;
@@ -128,21 +118,23 @@ namespace boost_http {
 				if (_CountClient() < thread_num_)
 					_RestartTimer(100);
 
+                LOGDEBUG("HttpDispatcher add request(%s), requestid = %d", request.url.c_str(), requestid);
+
 				return requestid;
 			}
 
-			void CancelRequest(int resuestid)
+			void CancelRequest(int requestid)
 			{
-				piwikLogDetail("Info") << "HttpDispatcher cancel request..." << resuestid << "\n";
+                LOGDEBUG("HttpDispatcher cancel request, requestid = %d", requestid);
 
 				// 删除用户数据信息
-				_CancelUser(resuestid);
+				_CancelUser(requestid);
 
 				// 删除等待队列中
-				_CancelRequest(resuestid);
+				_CancelRequest(requestid);
 
 				// 取消操作
-				_CancelClient(resuestid);
+				_CancelClient(requestid);
 			}
 
 		public:
@@ -154,6 +146,7 @@ namespace boost_http {
 			HttpDispatcher()
 				: thread_num_(1)
 				, bstop_(false)
+                , bwait_(false)
 				, timer_(io_service_)
 				, io_work_(io_service_)
 				, increase_id_(0)
@@ -171,7 +164,7 @@ namespace boost_http {
 
 			void OnRun()
 			{
-				piwikLogDetail("Info") << "HttpDispatcher run begin..." << "\n";
+				LOGDEBUG("HttpDispatcher OnRun begin...");
 
 				try
 				{
@@ -183,20 +176,20 @@ namespace boost_http {
 				}
 				catch (std::exception& e)
 				{
-					piwikLogDetail("Error") << "Exception: " << e.what() << "\n";
+                    LOGERR("HttpDispatcher Exception: %s", e.what());
 				}
 
-				piwikLogDetail("Info") << "HttpDispatcher run end..." << "\n";
+                LOGDEBUG("HttpDispatcher OnRun end...");
 			}
 
 			void OnTimer(const boost::system::error_code& err)
 			{
-				piwikLogDetail("Info") << "OnTimer begin" << "\n";
+                //LOGDEBUG("OnTimer begin...");
 
-				// end or cancel
-				if (bstop_ || err)
+				// cancel
+				if (err)
 				{
-					piwikLogDetail("Info") << "Timer Stopped or err..." << bstop_ << "--" << err << "\n";
+                    //LOGDEBUG("Timer err, do nothing...");
 					return;
 				}
 
@@ -210,8 +203,9 @@ namespace boost_http {
 					// dispatch this item
 					if (requestid == 0)
 					{
-						// no more task
-						std::cout << "no http request" << std::endl;
+						// no more request
+						//std::cout << "no http request" << std::endl;
+                        LOGDEBUG("no more task");
 						break;
 					}
 
@@ -221,17 +215,28 @@ namespace boost_http {
 					c->Start();
 				}
 
-				piwikLogDetail("Info") << "waiting size:" << _CountReqeust() << "\n";
-				piwikLogDetail("Info") << "client size:" << _CountClient() << "\n";
-				piwikLogDetail("Info") << "user size:" << _CountUser() << "\n";
+                if (bstop_)
+                {
+                    if (bwait_)
+                    {
+                        if (_CountClient() == 0 && _CountReqeust() == 0 && _CountUser() == 0)
+                        {
+                            // no request
+                            io_service_.stop();
+                        }
+                    }
+                }
 
-				piwikLogDetail("Info") << "OnTimer end" << "\n";
+				LOGDEBUG("waiting size: %d", _CountReqeust());
+				LOGDEBUG("client size: %d", _CountClient());
+                LOGDEBUG("user size: %d", _CountUser());
+
+                //LOGDEBUG("OnTimer end...");
 			}
 
 			void OnHttpCallback(const HttpRequest& request, int requestid, const HttpResponse& response)
 			{
-				piwikLogDetail("Info") << "callback..." << requestid << "-" << request.url << "-"
-					<< response.http_status << "-" << response.errmsg << "\n";
+                LOGDEBUG("callback, rid = %d, httpstatus = %d", requestid, response.http_status);
 
 				if (response.http_status == 206 && request.responseonce == false) {
 					_CallbackUser(request, requestid, response);
@@ -248,7 +253,7 @@ namespace boost_http {
 		private:
 			inline HttpClient_Ptr _BuildTask(int requestid, const HttpRequest& request_ptr)
 			{
-				piwikLogDetail("Info") << "_BuildTask..." << "\n";
+				LOGDEBUG("create client, rid = %d", requestid);
 
 				HttpClient_Ptr c(
 					new HttpClient(
@@ -263,7 +268,6 @@ namespace boost_http {
 
 			inline void _RestartTimer(int timer_msecond)
 			{
-				piwikLogDetail("Info") << "\nRestartTimer..." << "\n\n";
 				timer_.cancel();
 
 				timer_.expires_at(boost::get_system_time() + boost::posix_time::milliseconds(timer_msecond));
@@ -276,6 +280,8 @@ namespace boost_http {
 
 			// status
 			volatile bool bstop_;
+            // need wait all request when quit
+            volatile bool bwait_;
 
 			// io service
 			boost::asio::io_service io_service_;

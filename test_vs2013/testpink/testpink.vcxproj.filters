@@ -66,6 +66,9 @@
     <ClInclude Include="..\..\include\boost_http\client\HttpClientSync.hpp">
       <Filter>include\boost_http\client</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\boost_http\client\HttpExport.hpp">
+      <Filter>include\boost_http\client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

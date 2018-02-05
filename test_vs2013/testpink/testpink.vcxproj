@@ -20,7 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -53,12 +53,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir);D:\lu\bocai\third\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);E:\dev_workspace\qb\external\boost_1_59_0;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\lu\bocai\third\lib\boost</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\dev_workspace\qb\external\boost_1_59_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -87,6 +87,7 @@
     <ClInclude Include="..\..\include\boost_http\client\HttpClientSync.hpp" />
     <ClInclude Include="..\..\include\boost_http\client\HttpDefine.hpp" />
     <ClInclude Include="..\..\include\boost_http\client\HttpDispatcher.hpp" />
+    <ClInclude Include="..\..\include\boost_http\client\HttpExport.hpp" />
     <ClInclude Include="..\..\include\boost_http\util\SimpleUri.hpp" />
     <ClInclude Include="..\..\include\text\dbc_sbc.h" />
     <ClInclude Include="..\..\include\text\spliter.h" />

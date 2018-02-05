@@ -10,6 +10,7 @@
 #ifndef console_log_hpp_
 #define console_log_hpp_
 
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <stdio.h> 
 #include <stdlib.h>
@@ -67,7 +68,7 @@ public:
 
 	void postLog(const char *format, ... )
 	{
-		if (my_msg_hwnd_ == NULL || my_con_ == INVALID_HANDLE_VALUE)
+		if (my_msg_hwnd_ == NULL)
 		{
 			return;
 		}
@@ -144,7 +145,10 @@ private:
 			{
 				std::string* txt = (std::string*)lParam;
 				DWORD byteWrited;
-				WriteConsoleA(Console_log::ins().my_con_, txt->c_str(), txt->size(), &byteWrited, NULL);
+                if (Console_log::ins().my_con_ != INVALID_HANDLE_VALUE)
+                    WriteConsoleA(Console_log::ins().my_con_, txt->c_str(), txt->size(), &byteWrited, NULL);
+                else
+                    printf(txt->c_str());
 				delete txt;
 			}
 			break;
