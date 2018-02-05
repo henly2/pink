@@ -112,7 +112,7 @@ Ctestpink_mfcDlg::Ctestpink_mfcDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-    util::Console_log::ins().init();
+    //util::Console_log::ins().init();
 }
 
 void Ctestpink_mfcDlg::DoDataExchange(CDataExchange* pDX)
@@ -192,7 +192,19 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
 
 
     //test_bind_main();
-    test_virtual_main();
+    //test_virtual_main();
+
+    // 不要激活，设置tool窗口
+    ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+
+    // 设置透明度
+    LONG para = GetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE);
+    para |= WS_EX_LAYERED;
+    SetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE, para);
+    SetLayeredWindowAttributes(0, 50, LWA_ALPHA);
+
+    // 设置置顶
+    SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
