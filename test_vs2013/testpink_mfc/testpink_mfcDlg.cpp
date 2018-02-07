@@ -10,8 +10,8 @@
 #include "../source/cpt/CrossProcessComm.h"
 #include "../include/log/console_log.hpp"
 
-#include "../source/apihook/APIHook.h"
-#include "../source/apihook/GdiFontHook.h"
+#include "../source/apihook/APIHook.hpp"
+#include "../source/apihook/GdiFontHook.hpp"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -210,7 +210,8 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 设置置顶
     SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
-    g_oHook.Start();
+	api_hook::CAPIHook::Init();
+	hook_font_api();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -221,7 +222,8 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		//CAboutDlg dlgAbout;
 		//dlgAbout.DoModal();
-        g_oHook.Dump();
+		dump_font_stack();
+		unhook_font_api();
 	}
 	else
 	{

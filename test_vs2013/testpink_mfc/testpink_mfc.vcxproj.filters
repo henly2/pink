@@ -42,7 +42,10 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\apihook\APIHook.h">
+    <ClInclude Include="..\..\source\apihook\APIHook.hpp">
+      <Filter>source\apihook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\GdiFontHook.hpp">
       <Filter>source\apihook</Filter>
     </ClInclude>
   </ItemGroup>
@@ -64,12 +67,6 @@
     </ClCompile>
     <ClCompile Include="..\testsource\test_virtual.cpp">
       <Filter>testsource</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\apihook\APIHook.cpp">
-      <Filter>source\apihook</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\apihook\GdiFontHook.cpp">
-      <Filter>source\apihook</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
