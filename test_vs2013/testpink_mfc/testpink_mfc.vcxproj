@@ -113,6 +113,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\apihook\APIHook.cpp" />
+    <ClCompile Include="..\..\source\apihook\GdiFontHook.cpp" />
     <ClCompile Include="..\testsource\test_bind.cpp" />
     <ClCompile Include="..\testsource\test_thread.cpp" />
     <ClCompile Include="..\testsource\test_virtual.cpp" />

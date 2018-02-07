@@ -11,7 +11,7 @@
 #include "../include/log/console_log.hpp"
 
 #include "../source/apihook/APIHook.h"
-extern CAPIHook g_oHook;
+#include "../source/apihook/GdiFontHook.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

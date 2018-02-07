@@ -68,6 +68,9 @@
     <ClCompile Include="..\..\source\apihook\APIHook.cpp">
       <Filter>source\apihook</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\apihook\GdiFontHook.cpp">
+      <Filter>source\apihook</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="testpink_mfc.rc">
