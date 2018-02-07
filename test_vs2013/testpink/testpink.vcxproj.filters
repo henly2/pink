@@ -22,9 +22,6 @@
     <Filter Include="testsource">
       <UniqueIdentifier>{25f145b8-9111-48b6-a36e-e7eb0f3b61eb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="source">
-      <UniqueIdentifier>{953e2037-263b-443c-8df1-2ece88320593}</UniqueIdentifier>
-    </Filter>
     <Filter Include="include\boost_http">
       <UniqueIdentifier>{20549fb5-f269-4a96-9c97-179b9112ca69}</UniqueIdentifier>
     </Filter>

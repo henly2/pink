@@ -32,4 +32,6 @@ protected:
     afx_msg LRESULT OnReceiveNotify(WPARAM wParam, LPARAM lParam);
     afx_msg BOOL OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct);
 	DECLARE_MESSAGE_MAP()
+public:
+    afx_msg void OnBnClickedButton1();
 };

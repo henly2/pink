@@ -10,6 +10,9 @@
 #include "../source/cpt/CrossProcessComm.h"
 #include "../include/log/console_log.hpp"
 
+#include "../source/apihook/APIHook.h"
+extern CAPIHook g_oHook;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -126,6 +129,7 @@ BEGIN_MESSAGE_MAP(Ctestpink_mfcDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
     ON_MESSAGE(1217, OnReceiveNotify)
     ON_WM_COPYDATA()
+    ON_BN_CLICKED(IDC_BUTTON1, &Ctestpink_mfcDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -195,16 +199,18 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     //test_virtual_main();
 
     // 不要激活，设置tool窗口
-    ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+    //ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
 
     // 设置透明度
     LONG para = GetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE);
     para |= WS_EX_LAYERED;
     SetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE, para);
-    SetLayeredWindowAttributes(0, 50, LWA_ALPHA);
+    SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 
     // 设置置顶
     SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+
+    g_oHook.Start();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -213,8 +219,9 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
+		//CAboutDlg dlgAbout;
+		//dlgAbout.DoModal();
+        g_oHook.Dump();
 	}
 	else
 	{
@@ -306,4 +313,57 @@ BOOL Ctestpink_mfcDlg::OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct)
     }
 
     return TRUE;
+}
+
+void Ctestpink_mfcDlg::OnBnClickedButton1()
+{
+    // TODO:  在此添加控件通知处理程序代码
+
+    //CPaintDC dc(this);
+    CDC* pDC = GetDC();
+
+    //for (int i = 0; i < 100; i++)
+    {
+        CFont font;
+        VERIFY(font.CreateFont(
+            24,                        // nHeight
+            0,                         // nWidth
+            0,                         // nEscapement
+            0,                         // nOrientation
+            FW_NORMAL,                 // nWeight
+            FALSE,                     // bItalic
+            FALSE,                     // bUnderline
+            0,                         // cStrikeOut
+            ANSI_CHARSET,              // nCharSet
+            OUT_DEFAULT_PRECIS,        // nOutPrecision
+            CLIP_DEFAULT_PRECIS,       // nClipPrecision
+            DEFAULT_QUALITY,           // nQuality
+            DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily
+            _T("Arial")));                 // lpszFacename 
+
+        // Done with the font.  Delete the font object.
+        //font.DeleteObject();
+
+        //HPEN myPen1;
+        //myPen1 = ::CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+        font.Detach();
+
+        HFONT font2 = CreateFontW(
+            24,                        // nHeight
+            0,                         // nWidth
+            0,                         // nEscapement
+            0,                         // nOrientation
+            FW_NORMAL,                 // nWeight
+            FALSE,                     // bItalic
+            FALSE,                     // bUnderline
+            0,                         // cStrikeOut
+            ANSI_CHARSET,              // nCharSet
+            OUT_DEFAULT_PRECIS,        // nOutPrecision
+            CLIP_DEFAULT_PRECIS,       // nClipPrecision
+            DEFAULT_QUALITY,           // nQuality
+            DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily
+            _T("Arial"));
+    }
+    
+    ReleaseDC(pDC);
 }

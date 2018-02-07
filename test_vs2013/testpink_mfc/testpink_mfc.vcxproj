@@ -104,6 +104,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\source\apihook\APIHook.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -111,6 +112,7 @@
     <ClInclude Include="testpink_mfcDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\source\apihook\APIHook.cpp" />
     <ClCompile Include="..\testsource\test_bind.cpp" />
     <ClCompile Include="..\testsource\test_thread.cpp" />
     <ClCompile Include="..\testsource\test_virtual.cpp" />
@@ -133,4 +135,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="testpink_mfc.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

@@ -66,6 +66,23 @@ void test_format_main()
     print_limit();
 
 
+    int i_max = (numeric_limits<int>::max)();
+    int i_min = 0;// (numeric_limits<int>::min)();
+    for (int ii = i_min; ii <= i_max; ii++)
+    {
+        float ff = ii;
+
+        int ff_i = static_cast<int>(ff);
+
+        if (ff_i != ii)
+        {
+            std::cout << "ii = " << ii << ",ff_i = " << ff_i << std::endl;
+            system("pause");
+        }
+    }
+    return;
+
+
     std::cout << "c:" << std::to_string(float(20141232.0)) << std::endl;
     //return;
 

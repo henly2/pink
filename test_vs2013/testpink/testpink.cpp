@@ -42,8 +42,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			break;
 		default:
 			//test_text_main();
-			//test_format_main();
-			test_spliter_main();
+			test_format_main();
+			//test_spliter_main();
 			break;
 		}		
 	}

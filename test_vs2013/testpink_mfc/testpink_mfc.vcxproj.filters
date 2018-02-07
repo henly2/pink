@@ -16,6 +16,12 @@
     <Filter Include="testsource">
       <UniqueIdentifier>{3c67eecb-ed5a-4c50-b7e2-b9a53926da3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{d2e22fc2-a175-411d-ab79-4ca1ad48e859}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\apihook">
+      <UniqueIdentifier>{2d1abe96-d011-439f-8c14-7b173f851563}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -36,6 +42,9 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\apihook\APIHook.h">
+      <Filter>source\apihook</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="testpink_mfc.cpp">
@@ -55,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="..\testsource\test_virtual.cpp">
       <Filter>testsource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\apihook\APIHook.cpp">
+      <Filter>source\apihook</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

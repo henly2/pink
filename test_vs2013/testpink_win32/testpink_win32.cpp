@@ -146,7 +146,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    HPEN myPen1;
+                    myPen1 = ::CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+                }
+            }
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
