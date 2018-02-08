@@ -22,6 +22,9 @@
     <Filter Include="source\apihook">
       <UniqueIdentifier>{2d1abe96-d011-439f-8c14-7b173f851563}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\apihook\gdi">
+      <UniqueIdentifier>{8b6ac44b-78d1-4df2-b1f3-51d8f4d30f0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -45,8 +48,35 @@
     <ClInclude Include="..\..\source\apihook\APIHook.hpp">
       <Filter>source\apihook</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\apihook\GdiFontHook.hpp">
-      <Filter>source\apihook</Filter>
+    <ClInclude Include="..\..\source\apihook\gdi\FontHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\PenHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\BitmapHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\Gdi.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\BaseHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\BrushHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\DCHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\ExtPenHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\PaletteHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\gdi\RegionHook.hpp">
+      <Filter>source\apihook\gdi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

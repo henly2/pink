@@ -11,7 +11,7 @@
 #include "../include/log/console_log.hpp"
 
 #include "../source/apihook/APIHook.hpp"
-#include "../source/apihook/GdiFontHook.hpp"
+#include "../source/apihook/Gdi/Gdi.hpp"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -210,8 +210,12 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 设置置顶
     SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
-	api_hook::CAPIHook::Init();
-	hook_font_api();
+	apihook::StackWalker::Inst().Enable();
+
+    apihook::gdi_base::EnableHook();
+    apihook::gdi_pen::EnableHook();
+    apihook::gdi_font::EnableHook();
+    apihook::gdi_dc::EnableHook();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -222,8 +226,15 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		//CAboutDlg dlgAbout;
 		//dlgAbout.DoModal();
-		dump_font_stack();
-		unhook_font_api();
+        apihook::gdi_base::MyStacks_base::Inst().Dump("gdi.leak");
+        apihook::gdi_dc::MyStacks_relasedc::Inst().Dump("releasedc.leak");
+
+        apihook::gdi_dc::DisableHook();
+        apihook::gdi_pen::DisableHook();
+        apihook::gdi_font::DisableHook();
+        apihook::gdi_base::DisableHook();
+       
+        apihook::StackWalker::Inst().Disable();
 	}
 	else
 	{
@@ -320,6 +331,8 @@ BOOL Ctestpink_mfcDlg::OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct)
 void Ctestpink_mfcDlg::OnBnClickedButton1()
 {
     // TODO:  在此添加控件通知处理程序代码
+    apihook::gdi_base::MyStacks_base::Inst().Clear();
+    apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
 
     //CPaintDC dc(this);
     CDC* pDC = GetDC();
@@ -365,6 +378,12 @@ void Ctestpink_mfcDlg::OnBnClickedButton1()
             DEFAULT_QUALITY,           // nQuality
             DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily
             _T("Arial"));
+
+
+        HPEN hpen = ::CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+
+        CPen cpen;
+        cpen.CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
     }
     
     ReleaseDC(pDC);
