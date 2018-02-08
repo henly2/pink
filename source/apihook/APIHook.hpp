@@ -236,6 +236,7 @@ public:
             if (it2 != it->second.end())
             {
                 it->second.erase(it2);
+                break;
             }
         }
     }

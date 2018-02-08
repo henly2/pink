@@ -213,9 +213,15 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
 	apihook::StackWalker::Inst().Enable();
 
     apihook::gdi_base::EnableHook();
+
     apihook::gdi_pen::EnableHook();
     apihook::gdi_font::EnableHook();
     apihook::gdi_dc::EnableHook();
+    apihook::gdi_bitmap::EnableHook();
+    apihook::gdi_brush::EnableHook();
+    apihook::gdi_extpen::EnableHook();
+    apihook::gdi_palette::EnableHook();
+    apihook::gdi_region::EnableHook();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -226,13 +232,23 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		//CAboutDlg dlgAbout;
 		//dlgAbout.DoModal();
+        // 打印需要通过DeleteObject释放的泄漏地址
         apihook::gdi_base::MyStacks_base::Inst().Dump("gdi.leak");
+        // 打印需要通过ReleaseDC释放的泄漏地址
         apihook::gdi_dc::MyStacks_relasedc::Inst().Dump("releasedc.leak");
+        // 打印需要通过DeleteDC释放的泄漏地址
+        apihook::gdi_dc::MyStacks_deletedc::Inst().Dump("deletedc.leak");
 
         apihook::gdi_dc::DisableHook();
         apihook::gdi_pen::DisableHook();
         apihook::gdi_font::DisableHook();
-        apihook::gdi_base::DisableHook();
+        apihook::gdi_bitmap::DisableHook();
+        apihook::gdi_brush::DisableHook();
+        apihook::gdi_extpen::DisableHook();
+        apihook::gdi_palette::DisableHook();
+        apihook::gdi_region::DisableHook();
+
+        apihook::gdi_base::EnableHook();
        
         apihook::StackWalker::Inst().Disable();
 	}
