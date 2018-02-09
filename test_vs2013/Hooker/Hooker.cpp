@@ -125,7 +125,11 @@ void attach(std::vector<std::string>& vec)
         return;
     }
 
-    CHAR szPath[MAX_PATH] = "hookerdll.dll";
+    std::string hookerdll = GetModuleDir(GetModuleHandleA(NULL));
+    hookerdll += "\\";
+    hookerdll += "hookerdll.dll";
+    CHAR szPath[MAX_PATH] = {0};
+    strcpy_s(szPath, hookerdll.c_str());
     //在宿主进程中为LoadLibraryW的参数分配空间，并将参数值写入
     LPVOID lpMem = VirtualAllocEx(hTarget, NULL, sizeof(szPath),
         MEM_COMMIT, PAGE_READWRITE);

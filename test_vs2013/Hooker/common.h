@@ -19,6 +19,46 @@ namespace hook{
         }
     }
 
+    static std::string GetModuleDir(HMODULE hModule)
+    {
+        std::string dir;
+
+        char path[MAX_PATH] = { 0 };
+        DWORD len = GetModuleFileNameA(hModule, path, MAX_PATH);
+        if (len > 0)
+        {
+            dir.append(path, len);
+        }
+
+        size_t pos = dir.find_last_of('\\');
+        if (pos != std::string::npos)
+        {
+            dir = dir.substr(0, pos);
+        }
+
+        return dir;
+    }
+
+    static std::string GetModuleName(HMODULE hModule)
+    {
+        std::string name;
+
+        char path[MAX_PATH] = { 0 };
+        DWORD len = GetModuleFileNameA(hModule, path, MAX_PATH);
+        if (len > 0)
+        {
+            name.append(path, len);
+        }
+
+        size_t pos = name.find_first_of('\\');
+        if (pos != std::string::npos)
+        {
+            name = name.substr(pos + 1, name.length() - pos - 1);
+        }
+
+        return name;
+    }
+
     //////////////////////////////////////////////////////////////////////////
 #define DEF_GDI_ITEM_ID(item) Gi_##item
 #define DEF_GDI_ITEM_NAME(item) #item

@@ -27,6 +27,17 @@ static DWORD WINAPI MessageThread(LPVOID pVoid)
 
 void StartMessage(HMODULE hModule)
 {
+    {
+        std::string dir = hook::GetModuleDir(hModule);
+        OutputDebugStringA("--------------\n");
+        OutputDebugStringA(dir.c_str());
+        OutputDebugStringA("\n--------------\n");
+
+        std::string name = hook::GetModuleDir(GetModuleHandleA(NULL));
+        OutputDebugStringA("--------------\n");
+        OutputDebugStringA(name.c_str());
+        OutputDebugStringA("\n--------------\n");
+    }
     g_hModule = hModule;
     CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
 }
