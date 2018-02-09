@@ -10,8 +10,8 @@
 #include "../source/cpt/CrossProcessComm.h"
 #include "../include/log/console_log.hpp"
 
-#include "../source/apihook/APIHook.hpp"
-#include "../source/apihook/Gdi/Gdi.hpp"
+//#include "../source/apihook/APIHook.hpp"
+//#include "../source/apihook/Gdi/Gdi.hpp"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -210,18 +210,10 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 设置置顶
     SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
-	apihook::StackWalker::Inst().Enable();
+	//apihook::StackWalker::Inst().Enable();
+    //apihook::gdi_base::EnableHook();
+    //apihook::gdi_pen::EnableHook();
 
-    apihook::gdi_base::EnableHook();
-
-    apihook::gdi_pen::EnableHook();
-    apihook::gdi_font::EnableHook();
-    apihook::gdi_dc::EnableHook();
-    apihook::gdi_bitmap::EnableHook();
-    apihook::gdi_brush::EnableHook();
-    apihook::gdi_extpen::EnableHook();
-    apihook::gdi_palette::EnableHook();
-    apihook::gdi_region::EnableHook();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -233,24 +225,15 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		//CAboutDlg dlgAbout;
 		//dlgAbout.DoModal();
         // 打印需要通过DeleteObject释放的泄漏地址
-        apihook::gdi_base::MyStacks_base::Inst().Dump("gdi.leak");
+        //apihook::gdi_base::MyStacks_base::Inst().Dump("gdi.leak");
         // 打印需要通过ReleaseDC释放的泄漏地址
-        apihook::gdi_dc::MyStacks_relasedc::Inst().Dump("releasedc.leak");
+        //apihook::gdi_dc::MyStacks_relasedc::Inst().Dump("releasedc.leak");
         // 打印需要通过DeleteDC释放的泄漏地址
-        apihook::gdi_dc::MyStacks_deletedc::Inst().Dump("deletedc.leak");
+        //apihook::gdi_dc::MyStacks_deletedc::Inst().Dump("deletedc.leak");
 
-        apihook::gdi_dc::DisableHook();
-        apihook::gdi_pen::DisableHook();
-        apihook::gdi_font::DisableHook();
-        apihook::gdi_bitmap::DisableHook();
-        apihook::gdi_brush::DisableHook();
-        apihook::gdi_extpen::DisableHook();
-        apihook::gdi_palette::DisableHook();
-        apihook::gdi_region::DisableHook();
-
-        apihook::gdi_base::EnableHook();
-       
-        apihook::StackWalker::Inst().Disable();
+        //apihook::gdi_pen::DisableHook();
+        //apihook::gdi_base::EnableHook();    
+        //apihook::StackWalker::Inst().Disable();
 	}
 	else
 	{
@@ -347,8 +330,8 @@ BOOL Ctestpink_mfcDlg::OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct)
 void Ctestpink_mfcDlg::OnBnClickedButton1()
 {
     // TODO:  在此添加控件通知处理程序代码
-    apihook::gdi_base::MyStacks_base::Inst().Clear();
-    apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
+    //apihook::gdi_base::MyStacks_base::Inst().Clear();
+    //apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
 
     //CPaintDC dc(this);
     CDC* pDC = GetDC();
