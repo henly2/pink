@@ -11,9 +11,12 @@
 
 using namespace hook;
 
-HINSTANCE hinst_ = NULL;
-HWND hwnd_ = NULL;
-std::string tips_;
+HINSTANCE g_hinst = NULL;
+HWND g_hwnd = NULL;
+std::string g_tips;
+
+DWORD g_process_id = 0;
+std::string g_processname;
 class SimpleHwndMessage
 {
 public:
@@ -28,7 +31,10 @@ public:
     // 创建消息窗口
     bool Create(HINSTANCE hinstance, HWND parent = NULL)
     {
-        hinst_ = hinstance;
+        g_process_id = GetCurrentProcessId();
+        g_processname = GetModuleName(GetModuleHandleA(NULL));
+
+        g_hinst = hinstance;
 
         // register class
         WNDCLASSEXA wex = { 0 };
@@ -39,7 +45,7 @@ public:
         wex.cbClsExtra = 0;
         wex.cbWndExtra = 0;
         wex.lpfnWndProc = WndProc;
-        wex.hInstance = hinst_;
+        wex.hInstance = g_hinst;
         wex.lpszClassName = CLASS_NAME;
         wex.hCursor = LoadCursor(NULL, IDC_ARROW);
         wex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
@@ -48,22 +54,22 @@ public:
             return false;
         }
         // create window
-        hwnd_ = CreateWindowA(CLASS_NAME, NULL, WS_POPUP|WS_THICKFRAME,
+        g_hwnd = CreateWindowA(CLASS_NAME, NULL, WS_POPUP|WS_THICKFRAME,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            parent, NULL, hinst_, NULL);
-        if (hwnd_ == NULL)
+            parent, NULL, g_hinst, NULL);
+        if (g_hwnd == NULL)
         {
             return false;
         }
 
-        int w = 200, h = 50;
+        int w = 300, h = 50;
         HWND hd = GetDesktopWindow();
         RECT rt;
         GetClientRect(hd, &rt);
         int l = rt.right / 2 - w / 2;
         int t = 0;
-        SetWindowPos(hwnd_, HWND_TOPMOST, l, t, w, h, SWP_SHOWWINDOW);
-        UpdateWindow(hwnd_);
+        SetWindowPos(g_hwnd, HWND_TOPMOST, l, t, w, h, SWP_SHOWWINDOW);
+        UpdateWindow(g_hwnd);
 
         apihook::StackWalker::Inst().Enable();
         apihook::gdi_base::EnableHook();
@@ -82,8 +88,7 @@ public:
         apihook::gdi_region::DisableHook();
 
         apihook::gdi_base::DisableHook();
-        // 不在相同的线程enable和diable，会崩溃
-        //apihook::StackWalker::Inst().Disable();
+        apihook::StackWalker::Inst().Disable();
 
         apihook::gdi_base::MyStacks_base::Inst().Clear();
         apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
@@ -93,16 +98,16 @@ public:
     // 获取窗口
     HWND GetHWND() const
     {
-        return hwnd_;
+        return g_hwnd;
     }
 
 private:
 #define HE_IS_GDIID(value, item) if (IS_GDIID(value, item))   \
         { \
             apihook::gdi_##item::EnableHook();\
-            tips_ = "enable ";\
-            tips_ += #item;\
-            InvalidateRect(hwnd_, NULL, TRUE);\
+            g_tips = "enable ";\
+            g_tips += #item;\
+            InvalidateRect(g_hwnd, NULL, TRUE);\
         }
     static void he(int value)
     {  
@@ -118,9 +123,9 @@ private:
 #define HD_IS_GDIID(value, item) if (IS_GDIID(value, item))   \
         { \
             apihook::gdi_##item::DisableHook();\
-            tips_ = "disable ";\
-            tips_ += #item;\
-            InvalidateRect(hwnd_, NULL, TRUE);\
+            g_tips = "disable ";\
+            g_tips += #item;\
+            InvalidateRect(g_hwnd, NULL, TRUE);\
         }
     static void hd(int value)
     {
@@ -135,25 +140,30 @@ private:
     }
     static void clear()
     {
-        tips_ = "clear...";
+        g_tips = "clear...";
         apihook::gdi_base::MyStacks_base::Inst().Clear();
         apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
         apihook::gdi_dc::MyStacks_deletedc::Inst().Clear();
 
-        tips_ = "clear done...";
-        InvalidateRect(hwnd_, NULL, TRUE);
+        g_tips = "clear done...";
+        InvalidateRect(g_hwnd, NULL, TRUE);
     }
     static void dump()
     {
-        tips_ = "dump...";
-        InvalidateRect(hwnd_, NULL, TRUE);
+        g_tips = "dump...";
+        InvalidateRect(g_hwnd, NULL, TRUE);
 
-        apihook::gdi_base::MyStacks_base::Inst().Dump("base.leak");
-        apihook::gdi_dc::MyStacks_relasedc::Inst().Dump("releasedc.leak");
-        apihook::gdi_dc::MyStacks_deletedc::Inst().Dump("deletedc.leak");
+        std::string dlldir = GetModuleDir(g_hinst);
+        dlldir += "\\";
+        dlldir += g_processname;
+        dlldir += "_";
 
-        tips_ = "dump done...";
-        InvalidateRect(hwnd_, NULL, TRUE);
+        apihook::gdi_base::MyStacks_base::Inst().Dump(dlldir + "base.leak");
+        apihook::gdi_dc::MyStacks_relasedc::Inst().Dump(dlldir + "releasedc.leak");
+        apihook::gdi_dc::MyStacks_deletedc::Inst().Dump(dlldir + "deletedc.leak");
+
+        g_tips = "dump done...";
+        InvalidateRect(g_hwnd, NULL, TRUE);
     }
     static void HandleIPC(WPARAM wParam, LPARAM lParam)
     {
@@ -176,7 +186,7 @@ private:
             break;
         }
 
-        InvalidateRect(hwnd_, NULL, TRUE);
+        InvalidateRect(g_hwnd, NULL, TRUE);
     }
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
@@ -194,7 +204,9 @@ private:
             hdc = BeginPaint(hWnd, &ps);
             // TODO:  在此添加任意绘图代码...
             {
-                std::string text = "In ";
+                std::string text = "I am In Process ";
+                text += g_processname;
+                text += "--";
                 text += std::to_string(GetCurrentProcessId());
 
                 RECT rt;
@@ -204,7 +216,7 @@ private:
 
                 rt.top = rt.bottom;
                 rt.bottom *= 2;
-                DrawTextA(hdc, tips_.c_str(), tips_.length(), &rt, 0);
+                DrawTextA(hdc, g_tips.c_str(), g_tips.length(), &rt, 0);
             }
             EndPaint(hWnd, &ps);
             break;

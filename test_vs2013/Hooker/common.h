@@ -50,7 +50,7 @@ namespace hook{
             name.append(path, len);
         }
 
-        size_t pos = name.find_first_of('\\');
+        size_t pos = name.find_last_of('\\');
         if (pos != std::string::npos)
         {
             name = name.substr(pos + 1, name.length() - pos - 1);
@@ -136,6 +136,7 @@ g_funcid_map[DEF_FUNC_ITEM_NAME(item)] = DEF_FUNC_ITEM_ID(item);\
 
     enum FUNCID{
         DEF_FUNC_ITEM_ID(nil) = 0,
+        DEF_FUNC_ITEM_ID(listprocess),
         DEF_FUNC_ITEM_ID(attach),
         DEF_FUNC_ITEM_ID(detach),
         DEF_FUNC_ITEM_ID(quit),
@@ -148,6 +149,7 @@ g_funcid_map[DEF_FUNC_ITEM_NAME(item)] = DEF_FUNC_ITEM_ID(item);\
     static std::unordered_map<std::string, FUNCID> g_funcid_map;
     static void init_funcid()
     {
+        INIT_FUNC_ITEM(listprocess);
         INIT_FUNC_ITEM(attach);
         INIT_FUNC_ITEM(detach);
         INIT_FUNC_ITEM(quit);

@@ -5,44 +5,48 @@
 
 #include "HwndMessage.h"
 
+SimpleHwndMessage g_hwndmsg;
+
 HMODULE g_hModule = NULL;
-SimpleHwndMessage s_hwndmsg;
-
-static DWORD WINAPI MessageThread(LPVOID pVoid)
+HANDLE g_hthread = NULL;
+HANDLE g_hexit = NULL;
+DWORD WINAPI MessageThread(LPVOID pVoid)
 {
-    s_hwndmsg.Create(g_hModule, NULL);
+    g_hwndmsg.Create(g_hModule, NULL);
 
-    // 主消息循环: 
     MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0))
-    {
+    while (GetMessage(&msg, NULL, 0, 0)){
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
 
-    s_hwndmsg.Finish();
+    g_hwndmsg.Finish();
 
+    if (g_hexit != NULL){
+        SetEvent(g_hexit);
+    }
     return 0;
 }
 
-void StartMessage(HMODULE hModule)
+void StartMessageLoop(HMODULE hModule)
 {
-    {
-        std::string dir = hook::GetModuleDir(hModule);
-        OutputDebugStringA("--------------\n");
-        OutputDebugStringA(dir.c_str());
-        OutputDebugStringA("\n--------------\n");
-
-        std::string name = hook::GetModuleDir(GetModuleHandleA(NULL));
-        OutputDebugStringA("--------------\n");
-        OutputDebugStringA(name.c_str());
-        OutputDebugStringA("\n--------------\n");
-    }
     g_hModule = hModule;
-    CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
+    g_hexit = CreateEventA(NULL, FALSE, FALSE, NULL);
+    g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
 }
 
-void StopMessage(HMODULE hModule)
+void StopMessageLoop(HMODULE hModule)
 {
-    PostMessage(s_hwndmsg.GetHWND(), WM_QUIT, NULL, NULL);
+    PostMessage(g_hwndmsg.GetHWND(), WM_QUIT, NULL, NULL);
+
+    if (g_hexit != NULL){
+        WaitForSingleObject(g_hexit, INFINITE);
+        CloseHandle(g_hexit);
+        g_hexit = NULL;
+    }
+
+    if (g_hthread != NULL){
+        CloseHandle(g_hthread);
+        g_hthread = NULL;
+    }
 }

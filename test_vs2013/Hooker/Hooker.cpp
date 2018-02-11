@@ -56,13 +56,14 @@ DWORD FindProcByName(LPCSTR lpName)
 void printusage()
 {
     std::cout << "Usage:\n";
+    std::cout << "  0: " << "listprocess (list all process)\n";
     std::cout << "  1: " << "attach pid/name (inject a process)\n";
     std::cout << "  2: " << "detach (detach process)\n";
     std::cout << "  3: " << "quit (detach process and quit)\n";
     std::cout << "  4: " << "he " << g_all_gdiitems << " (hook enable item)\n";
     std::cout << "  5: " << "hd " << g_all_gdiitems << " (hook disable item)\n";
-    std::cout << "  6: " << "clear (clear last content)\n";
-    std::cout << "  7: " << "dump (dump content)\n";
+    std::cout << "  6: " << "clear (clear leak)\n";
+    std::cout << "  7: " << "dump (dump leak)\n";
 }
 
 void errinput()
@@ -84,6 +85,37 @@ HWND FindTargetHwnd()
     return hwnd;
 }
 
+void listprocess()
+{
+    DWORD aProcId[1024], dwProcCnt, dwModCnt;
+    char szPath[MAX_PATH];
+    HMODULE hMod;
+
+    //枚举出所有进程ID
+    if (!EnumProcesses(aProcId, sizeof(aProcId), &dwProcCnt))
+    {
+        std::cout << "EnumProcesses error: " << GetLastError() << std::endl;
+    }
+
+    //遍例所有进程
+    for (DWORD i = 0; i < dwProcCnt; ++i)
+    {
+        //打开进程，如果没有权限打开则跳过
+        HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, aProcId[i]);
+        if (NULL != hProc)
+        {
+            //打开进程的第1个Module，并检查其名称是否与目标相符
+            if (EnumProcessModules(hProc, &hMod, sizeof(hMod), &dwModCnt))
+            {
+                GetModuleBaseNameA(hProc, hMod, szPath, MAX_PATH);
+
+                std::cout << szPath << "    " << aProcId[i] << std::endl;
+                
+            }
+            CloseHandle(hProc);
+        }
+    }
+}
 void attach(std::vector<std::string>& vec)
 {
     std::cout << "attach..." << std::endl;
@@ -322,6 +354,9 @@ bool doonce(const std::string& input)
     {
     case Func_nil:
         errinput();
+        break;
+    case Func_listprocess:
+        listprocess();
         break;
     case Func_attach:
         attach(vec);
