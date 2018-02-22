@@ -25,6 +25,9 @@
     <Filter Include="source\apihook\gdi">
       <UniqueIdentifier>{8b6ac44b-78d1-4df2-b1f3-51d8f4d30f0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\apihook\memory">
+      <UniqueIdentifier>{008e52ff-6803-478d-be71-692681bbe3b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -77,6 +80,12 @@
     </ClInclude>
     <ClInclude Include="..\..\source\apihook\gdi\RegionHook.hpp">
       <Filter>source\apihook\gdi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\memory\MemoryHook.hpp">
+      <Filter>source\apihook\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\apihook\APIHook2.hpp">
+      <Filter>source\apihook</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

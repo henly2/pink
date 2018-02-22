@@ -1,26 +1,26 @@
 
-// testpink_mfc.cpp : 定义应用程序的类行为。
+// testpink_mfc2.cpp : 定义应用程序的类行为。
 //
 
 #include "stdafx.h"
-#include "testpink_mfc.h"
-#include "testpink_mfcDlg.h"
+#include "testpink_mfc2.h"
+#include "testpink_mfc2Dlg.h"
 
 #ifdef _DEBUG
-//#define new DEBUG_NEW
+#define new DEBUG_NEW
 #endif
 
 
-// Ctestpink_mfcApp
+// Ctestpink_mfc2App
 
-BEGIN_MESSAGE_MAP(Ctestpink_mfcApp, CWinApp)
+BEGIN_MESSAGE_MAP(Ctestpink_mfc2App, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
-// Ctestpink_mfcApp 构造
+// Ctestpink_mfc2App 构造
 
-Ctestpink_mfcApp::Ctestpink_mfcApp()
+Ctestpink_mfc2App::Ctestpink_mfc2App()
 {
 	// 支持重新启动管理器
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
@@ -30,14 +30,14 @@ Ctestpink_mfcApp::Ctestpink_mfcApp()
 }
 
 
-// 唯一的一个 Ctestpink_mfcApp 对象
+// 唯一的一个 Ctestpink_mfc2App 对象
 
-Ctestpink_mfcApp theApp;
+Ctestpink_mfc2App theApp;
 
 
-// Ctestpink_mfcApp 初始化
+// Ctestpink_mfc2App 初始化
 
-BOOL Ctestpink_mfcApp::InitInstance()
+BOOL Ctestpink_mfc2App::InitInstance()
 {
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
@@ -70,7 +70,7 @@ BOOL Ctestpink_mfcApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-	Ctestpink_mfcDlg dlg;
+	Ctestpink_mfc2Dlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)

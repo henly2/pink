@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="third">
+      <UniqueIdentifier>{ad95e3a5-69a7-410a-b35c-335b96355544}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -27,6 +30,12 @@
     <ClInclude Include="common.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\third\StackWalker\Main\StackWalker\StackWalker.h">
+      <Filter>third</Filter>
+    </ClInclude>
+    <ClInclude Include="HookerHwndMessage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -34,6 +43,9 @@
     </ClCompile>
     <ClCompile Include="Hooker.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\third\StackWalker\Main\StackWalker\StackWalker.cpp">
+      <Filter>third</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

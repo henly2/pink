@@ -7,6 +7,9 @@
 #include "../source/apihook/APIHook.hpp"
 #include "../source/apihook/Gdi/Gdi.hpp"
 
+#include "../source/apihook/APIHook2.hpp"
+#include "../source/apihook/memory/MemoryHook.hpp"
+
 #include "../Hooker/common.h"
 
 using namespace hook;
@@ -46,7 +49,7 @@ public:
         wex.cbWndExtra = 0;
         wex.lpfnWndProc = WndProc;
         wex.hInstance = g_hinst;
-        wex.lpszClassName = CLASS_NAME;
+        wex.lpszClassName = CLASS_NAME_DLL;
         wex.hCursor = LoadCursor(NULL, IDC_ARROW);
         wex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
         if ((RegisterClassExA(&wex)) == NULL)
@@ -54,7 +57,7 @@ public:
             return false;
         }
         // create window
-        g_hwnd = CreateWindowA(CLASS_NAME, NULL, WS_POPUP|WS_THICKFRAME,
+        g_hwnd = CreateWindowA(CLASS_NAME_DLL, NULL, WS_POPUP | WS_THICKFRAME,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             parent, NULL, g_hinst, NULL);
         if (g_hwnd == NULL)
@@ -73,6 +76,8 @@ public:
 
         apihook::StackWalker::Inst().Enable();
         apihook::gdi_base::EnableHook();
+
+        apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
         return true;
     }
 
@@ -93,6 +98,9 @@ public:
         apihook::gdi_base::MyStacks_base::Inst().Clear();
         apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
         apihook::gdi_dc::MyStacks_deletedc::Inst().Clear();
+
+        apihook::memory_heap::DisableHook();
+        apihook::StackWalkerIPC::Inst().DisableLocal();
     }
 
     // »ñÈ¡´°¿Ú
@@ -165,6 +173,16 @@ private:
         g_tips = "dump done...";
         InvalidateRect(g_hwnd, NULL, TRUE);
     }
+
+    static void me(int value)
+    {
+        apihook::memory_heap::EnableHook();
+    }
+    static void md(int value)
+    {
+        apihook::memory_heap::DisableHook();
+    }
+
     static void HandleIPC(WPARAM wParam, LPARAM lParam)
     {
         FUNCID funcid = (FUNCID)wParam;
@@ -182,6 +200,12 @@ private:
         case hook::Func_dump:
             dump();
             break;
+        case hook::Func_me:
+            me(lParam);
+            break;
+        case hook::Func_md:
+            md(lParam);
+            break;
         default:
             break;
         }
@@ -197,7 +221,7 @@ private:
 
         switch (nMsg)
         {
-        case WM_IPC:
+        case WM_IPC_TODLL:
             HandleIPC(wParam, lParam);
             break;
         case WM_PAINT:

@@ -30,6 +30,12 @@ DWORD WINAPI MessageThread(LPVOID pVoid)
 
 void StartMessageLoop(HMODULE hModule)
 {
+    HWND parent = FindWindowA(NULL, "abcd");
+    //g_hwndmsg.Create(g_hModule, parent);
+}
+
+void StartMessageLoop2(HMODULE hModule)
+{
     g_hModule = hModule;
     g_hexit = CreateEventA(NULL, FALSE, FALSE, NULL);
     g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);

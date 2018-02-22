@@ -143,7 +143,9 @@ g_funcid_map[DEF_FUNC_ITEM_NAME(item)] = DEF_FUNC_ITEM_ID(item);\
         DEF_FUNC_ITEM_ID(he),
         DEF_FUNC_ITEM_ID(hd),
         DEF_FUNC_ITEM_ID(clear),
-        DEF_FUNC_ITEM_ID(dump)
+        DEF_FUNC_ITEM_ID(dump),
+        DEF_FUNC_ITEM_ID(me),
+        DEF_FUNC_ITEM_ID(md),
     };
 
     static std::unordered_map<std::string, FUNCID> g_funcid_map;
@@ -157,6 +159,9 @@ g_funcid_map[DEF_FUNC_ITEM_NAME(item)] = DEF_FUNC_ITEM_ID(item);\
         INIT_FUNC_ITEM(hd);
         INIT_FUNC_ITEM(clear);
         INIT_FUNC_ITEM(dump);
+
+        INIT_FUNC_ITEM(me);
+        INIT_FUNC_ITEM(md);
     }
     static FUNCID getfuncid_bystring(const std::string& func)
     {
@@ -170,12 +175,11 @@ g_funcid_map[DEF_FUNC_ITEM_NAME(item)] = DEF_FUNC_ITEM_ID(item);\
     }
 
     //////////////////////////////////////////////////////////////////////////
-    // {80825136-05AC-4A6D-934A-D77146A914DD}
-    //IMPLEMENT_OLECREATE(<< 类 >> , << 外部名称 >> ,
-    //0x80825136, 0x5ac, 0x4a6d, 0x93, 0x4a, 0xd7, 0x71, 0x46, 0xa9, 0x14, 0xdd);
+    static const char* CLASS_NAME_HOST = "SimpleHwndMessage_host";
+    static const char* CLASS_NAME_DLL = "SimpleHwndMessage_dll";
 
-    static const char* CLASS_NAME = "SimpleHwndMessage";
-    static const char* WINDOW_NAME = "SimpleHwndMessage";
+#define WM_IPC_TODLL (WM_USER + 10)
+#define WM_IPC_TOHOST (WM_USER + 11)
+#define WM_IPC_TOHOST2 (WM_USER + 12)
 
-#define WM_IPC (WM_USER + 10)
 }

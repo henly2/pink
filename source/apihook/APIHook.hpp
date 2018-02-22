@@ -12,6 +12,23 @@
 
 namespace apihook {
 
+    class CSLock{
+        CRITICAL_SECTION	m_cs;
+    public:
+        CSLock(){ InitializeCriticalSection(&m_cs); }
+        ~CSLock(){ DeleteCriticalSection(&m_cs); }
+        void SetSpinCount(int count){ SetCriticalSectionSpinCount(&m_cs, count); }
+        void Lock(){ EnterCriticalSection(&m_cs); }
+        void Unlock(){ LeaveCriticalSection(&m_cs); }
+    };
+
+    class ScopedLock{
+        CSLock&		m_lock;
+    public:
+        ScopedLock(CSLock& lock) :m_lock(lock){ m_lock.Lock(); }
+        ~ScopedLock(){ m_lock.Unlock(); }
+    };
+
 //////////////////////////////////////////////////////////////////////////
 template<typename FUNC>
 class APIHookInfo
@@ -225,11 +242,19 @@ class MyStacks
 public:
     void Add(const std::string& type, int key)
     {
+        ScopedLock lock(cs_lock_);
         type_stacks_[type][key] = apihook::StackWalker::Inst().DumpStack();
+    }
+
+    void Add(const std::string& type, int key, const std::string& text)
+    {
+        ScopedLock lock(cs_lock_);
+        type_stacks_[type][key] = text;
     }
 
     void Remove(int key)
     {
+        ScopedLock lock(cs_lock_);
         for (auto it = type_stacks_.begin(); it != type_stacks_.end(); it++)
         {
             auto it2 = it->second.find((int)key);
@@ -243,11 +268,13 @@ public:
 
     void Clear()
     {
+        ScopedLock lock(cs_lock_);
         type_stacks_.clear();
     }
 
     void Dump(const std::string& path)
     {
+        ScopedLock lock(cs_lock_);
         std::ofstream file(path);
 
         int allcount = 0;
@@ -257,7 +284,7 @@ public:
         }
 
         file << "-----------------------------Begin----------------------------\n";
-        file << "Found All GDI: " << allcount << " leak\n";
+        file << "Found All: " << allcount << " leak\n";
         file << "--------------------------------------------------------------\n";
         for (auto it = type_stacks_.begin(); it != type_stacks_.end(); it++)
         {
@@ -291,6 +318,8 @@ protected:
 private:
     typedef std::unordered_map<int, std::string> STACKMAP;
     std::unordered_map<std::string, STACKMAP> type_stacks_;
+
+    CSLock cs_lock_;
 };
 
 #define DEFINE_MYSTACK_INST(tag) \

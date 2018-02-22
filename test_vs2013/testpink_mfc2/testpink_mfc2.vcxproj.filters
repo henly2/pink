@@ -13,39 +13,60 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="third">
+      <UniqueIdentifier>{dd222fdb-3c27-451c-99dc-e23777295563}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="testpink_mfc2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="testpink_mfc2Dlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="HwndMessage.h">
+    <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\Hooker\common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="HookInjEx_DLL.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="..\..\..\third\StackWalker\Main\StackWalker\StackWalker.h">
+      <Filter>third</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="testpink_mfc2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="testpink_mfc2Dlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="HookerDll.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="..\..\..\third\StackWalker\Main\StackWalker\StackWalker.cpp">
+      <Filter>third</Filter>
     </ClCompile>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="HookInjEx_DLL.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="testpink_mfc2.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\testpink_mfc2.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\testpink_mfc2.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

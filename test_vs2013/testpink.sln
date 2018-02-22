@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hooker", "Hooker\Hooker.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HookerDll", "HookerDll\HookerDll.vcxproj", "{13308D8C-3F84-4423-9004-6DA5FCAE18B5}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testpink_mfc2", "testpink_mfc2\testpink_mfc2.vcxproj", "{0B1DAE0A-7857-4D99-B0A0-82D21F1BC24A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -39,6 +41,10 @@ Global
 		{13308D8C-3F84-4423-9004-6DA5FCAE18B5}.Debug|Win32.Build.0 = Debug|Win32
 		{13308D8C-3F84-4423-9004-6DA5FCAE18B5}.Release|Win32.ActiveCfg = Release|Win32
 		{13308D8C-3F84-4423-9004-6DA5FCAE18B5}.Release|Win32.Build.0 = Release|Win32
+		{0B1DAE0A-7857-4D99-B0A0-82D21F1BC24A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0B1DAE0A-7857-4D99-B0A0-82D21F1BC24A}.Debug|Win32.Build.0 = Debug|Win32
+		{0B1DAE0A-7857-4D99-B0A0-82D21F1BC24A}.Release|Win32.ActiveCfg = Release|Win32
+		{0B1DAE0A-7857-4D99-B0A0-82D21F1BC24A}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -10,11 +10,14 @@
 #include "../source/cpt/CrossProcessComm.h"
 #include "../include/log/console_log.hpp"
 
-//#include "../source/apihook/APIHook.hpp"
-//#include "../source/apihook/Gdi/Gdi.hpp"
+#include "../source/apihook/APIHook.hpp"
+#include "../source/apihook/Gdi/Gdi.hpp"
+
+#include "../source/apihook/APIHook2.hpp"
+#include "../source/apihook/memory/MemoryHook.hpp"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
+//#define new DEBUG_NEW
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -210,10 +213,13 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 设置置顶
     SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
+    SetWindowText(_T("abcd"));
+
+    //apihook::StackWalkerIPC::Inst().EnableLocal();
+
 	//apihook::StackWalker::Inst().Enable();
     //apihook::gdi_base::EnableHook();
     //apihook::gdi_pen::EnableHook();
-
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -233,7 +239,6 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
         //apihook::gdi_pen::DisableHook();
         //apihook::gdi_base::EnableHook();    
-        //apihook::StackWalker::Inst().Disable();
 	}
 	else
 	{
@@ -327,11 +332,62 @@ BOOL Ctestpink_mfcDlg::OnCopyData(CWnd* pWnd, COPYDATASTRUCT* pCopyDataStruct)
     return TRUE;
 }
 
+//////////////////////////////////////////////////////////////////////////
+DWORD WINAPI TestThread(LPVOID pParam)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        std::string* pp = new std::string;
+        Sleep(200);
+
+        if (i < 10)
+        {
+            delete pp;
+        }
+    }
+    return 0;
+}
+DWORD WINAPI TestThread2(LPVOID pParam)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        void* pp = malloc(20);
+        Sleep(300);
+
+        if (i < 10)
+        {
+            delete pp;
+        }
+    }
+    return 0;
+}
+
 void Ctestpink_mfcDlg::OnBnClickedButton1()
 {
     // TODO:  在此添加控件通知处理程序代码
     //apihook::gdi_base::MyStacks_base::Inst().Clear();
     //apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
+    //apihook::memory_heap::EnableHook();
+
+    HANDLE h[2];
+    for (int i = 0; i < 1; i++)
+    {
+        if (i < 1)
+             h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
+        else
+            ;// h[i] = CreateThread(NULL, 0, TestThread2, NULL, 0, NULL);
+    }
+    //WaitForMultipleObjects(2, h, TRUE, INFINITE);
+    
+    int *ppp = new int;
+
+    int *pppp = new int;
+
+    delete ppp;
+
+    //apihook::memory_heap::DisableHook();
+
+    return;
 
     //CPaintDC dc(this);
     CDC* pDC = GetDC();

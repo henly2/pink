@@ -15,6 +15,11 @@ using namespace std;
 #include "common.h"
 using namespace hook;
 
+#include "..\HookerDLL\HookInjEx_DLL.h"
+#pragma comment(lib, "../debug/HookerDll.lib")
+
+#include "HookerHwndMessage.h"
+
 //////////////////////////////////////////////////////////////////////////
 DWORD FindProcByName(LPCSTR lpName)
 {
@@ -52,6 +57,35 @@ DWORD FindProcByName(LPCSTR lpName)
     return 0;
 }
 
+typedef struct
+{
+    HWND hWnd;
+    DWORD dwPid;
+}WNDINFO;
+
+BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam)
+{
+    WNDINFO* pInfo = (WNDINFO*)lParam;
+    DWORD dwProcessId = 0;
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+
+    if (dwProcessId == pInfo->dwPid)
+    {
+        pInfo->hWnd = hWnd;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+HWND GetHwndByProcessId(DWORD dwProcessId)
+{
+    WNDINFO info = { 0 };
+    info.hWnd = NULL;
+    info.dwPid = dwProcessId;
+    EnumWindows(EnumWindowsProc, (LPARAM)&info);
+    return info.hWnd;
+}
+
 //////////////////////////////////////////////////////////////////////////
 void printusage()
 {
@@ -80,7 +114,16 @@ HWND FindTargetHwnd()
 {
     HWND hwnd = NULL;
 
-    hwnd = FindWindowA(CLASS_NAME, NULL);
+    hwnd = FindWindowA(CLASS_NAME_DLL, NULL);
+
+    return hwnd;
+}
+
+HWND FindHostHwnd()
+{
+    HWND hwnd = NULL;
+
+    hwnd = FindWindowA(CLASS_NAME_HOST, NULL);
 
     return hwnd;
 }
@@ -233,6 +276,48 @@ void attach(std::vector<std::string>& vec)
     //++
     g_htarget = hTarget;
 
+    StartMessageLoop(GetModuleHandleA(NULL), pid, (HMODULE)g_htarget, NULL);
+
+    std::cout << "attach finish..., module = " << g_dll << std::endl;
+}
+void attach2(std::vector<std::string>& vec)
+{
+    std::cout << "attach..." << std::endl;
+    if (g_htarget != NULL)
+    {
+        std::cout << "###Err:has attach" << std::endl;
+        return;
+    }
+
+    if (vec.size() < 2){
+        errinput();
+        return;
+    }
+
+    int pid = atoi(vec[1].c_str());
+    if (pid == 0){
+        pid = FindProcByName(vec[1].c_str());
+    }
+    if (pid == 0){
+        std::cout << "###Err: process id or name...\n";
+        return;
+    }
+
+    HANDLE hTarget = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (NULL == hTarget)
+    {
+        std::cout << "###Err: Can't Open target process!\n";
+        return;
+    }
+
+    HWND hStart = GetHwndByProcessId(pid);
+    InjectDll(hStart);
+    
+    //++
+    g_htarget = hTarget;
+
+    StartMessageLoop(GetModuleHandleA(NULL), pid, (HMODULE)g_htarget, NULL);
+
     std::cout << "attach finish..., module = " << g_dll << std::endl;
 }
 void detach(std::vector<std::string>& vec)
@@ -244,6 +329,8 @@ void detach(std::vector<std::string>& vec)
         std::cout << "###Err:no attach" << std::endl;
         return;
     }
+
+    StopMessageLoop();
 
     HMODULE hKernel32 = GetModuleHandle(_T("Kernel32"));
     LPTHREAD_START_ROUTINE pFreeLib = (LPTHREAD_START_ROUTINE)
@@ -276,6 +363,27 @@ void detach(std::vector<std::string>& vec)
     std::cout << "detach finish..." << std::endl;
     return;
 }
+void detach2(std::vector<std::string>& vec)
+{
+    std::cout << "detach..." << std::endl;
+
+    if (g_htarget == NULL)
+    {
+        std::cout << "###Err:no attach" << std::endl;
+        return;
+    }
+
+    StopMessageLoop();
+
+    UnmapDll();
+
+    CloseHandle(g_htarget);
+    g_htarget = NULL;
+    g_dll = 0;
+
+    std::cout << "detach finish..." << std::endl;
+    return;
+}
 void he(std::vector<std::string>& vec)
 {
     if (vec.size() < 2){
@@ -291,7 +399,7 @@ void he(std::vector<std::string>& vec)
         return;
     }
     
-    PostMessage(ht, WM_IPC, DEF_FUNC_ITEM_ID(he), value);
+    PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(he), value);
 }
 void hd(std::vector<std::string>& vec)
 {
@@ -308,25 +416,70 @@ void hd(std::vector<std::string>& vec)
         return;
     }
 
-    PostMessage(ht, WM_IPC, DEF_FUNC_ITEM_ID(hd), value);
+    PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(hd), value);
 }
 void clear()
 {
     system("cls");
 
-    HWND ht = FindTargetHwnd();
-    if (ht == NULL)
     {
-        std::cout << "###Err: not find hwnd\n";
-        return;
+        HWND ht = FindTargetHwnd();
+        if (ht == NULL)
+        {
+            std::cout << "###Err: not find hwnd\n";
+            return;
+        }
+
+        PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(clear), 0);
     }
 
-    PostMessage(ht, WM_IPC, DEF_FUNC_ITEM_ID(clear), 0);
+    {
+        HWND ht = FindHostHwnd();
+        if (ht == NULL)
+        {
+            std::cout << "###Err: not find host hwnd\n";
+            return;
+        }
+
+        PostMessage(ht, WM_IPC_TOHOST, DEF_FUNC_ITEM_ID(clear), 0);
+    }
 }
 void dump()
 {
     std::cout << "dump..." << std::endl;
 
+    {
+        HWND ht = FindTargetHwnd();
+        if (ht == NULL)
+        {
+            std::cout << "###Err: not find hwnd\n";
+            return;
+        }
+
+        PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(dump), 0);
+    }
+
+    {
+        HWND ht = FindHostHwnd();
+        if (ht == NULL)
+        {
+            std::cout << "###Err: not find host hwnd\n";
+            return;
+        }
+
+        PostMessage(ht, WM_IPC_TOHOST, DEF_FUNC_ITEM_ID(dump), 0);
+    }
+    
+}
+
+void me(std::vector<std::string>& vec)
+{
+    if (vec.size() < 2){
+        errinput();
+        return;
+    }
+
+    int value = 0;// compose_gdiids(vec[1]);
     HWND ht = FindTargetHwnd();
     if (ht == NULL)
     {
@@ -334,9 +487,25 @@ void dump()
         return;
     }
 
-    PostMessage(ht, WM_IPC, DEF_FUNC_ITEM_ID(dump), 0);
+    PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(me), value);
 }
+void md(std::vector<std::string>& vec)
+{
+    if (vec.size() < 2){
+        errinput();
+        return;
+    }
 
+    int value = 0;// compose_gdiids(vec[1]);
+    HWND ht = FindTargetHwnd();
+    if (ht == NULL)
+    {
+        std::cout << "###Err: not find hwnd\n";
+        return;
+    }
+
+    PostMessage(ht, WM_IPC_TODLL, DEF_FUNC_ITEM_ID(md), value);
+}
 //////////////////////////////////////////////////////////////////////////
 bool doonce(const std::string& input)
 {
@@ -359,10 +528,10 @@ bool doonce(const std::string& input)
         listprocess();
         break;
     case Func_attach:
-        attach(vec);
+        attach2(vec);
         break;
     case Func_detach:
-        detach(vec);
+        detach2(vec);
         break;
     case Func_quit:
         detach(vec);
@@ -379,6 +548,12 @@ bool doonce(const std::string& input)
         break;
     case Func_dump:
         dump();
+        break;
+    case Func_me:
+        me(vec);
+        break;
+    case Func_md:
+        md(vec);
         break;
     default:
         break;

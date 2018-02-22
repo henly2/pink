@@ -27,7 +27,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
@@ -105,6 +105,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\apihook\APIHook.hpp" />
+    <ClInclude Include="..\..\source\apihook\APIHook2.hpp" />
     <ClInclude Include="..\..\source\apihook\gdi\BaseHook.hpp" />
     <ClInclude Include="..\..\source\apihook\gdi\BitmapHook.hpp" />
     <ClInclude Include="..\..\source\apihook\gdi\BrushHook.hpp" />
@@ -115,6 +116,7 @@
     <ClInclude Include="..\..\source\apihook\gdi\PaletteHook.hpp" />
     <ClInclude Include="..\..\source\apihook\gdi\PenHook.hpp" />
     <ClInclude Include="..\..\source\apihook\gdi\RegionHook.hpp" />
+    <ClInclude Include="..\..\source\apihook\memory\MemoryHook.hpp" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
