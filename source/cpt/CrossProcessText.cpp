@@ -72,7 +72,7 @@ bool ChildTextHolder::CreateEdit(HWND hparent, UINT id)
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
-    m_edit = CreateWindow(L"EDIT", NULL,
+    m_edit = CreateWindowA("EDIT", NULL,
         WS_CHILD,
         0, 0, 100, 100, 
         hparent, (HMENU)id, hInstance, 0);

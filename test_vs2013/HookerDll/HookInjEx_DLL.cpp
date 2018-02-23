@@ -36,31 +36,14 @@ HINSTANCE	hDll;
 WNDPROC				OldProc = NULL;	
 LRESULT CALLBACK	NewProc( HWND,UINT,WPARAM,LPARAM );
 
+extern void StartMessageLoop(HMODULE hModule, HWND hParent);
+extern void StopMessageLoop(HMODULE hModule);
+extern void MoveMessageWnd(POINT pt);
+extern HWND GetMessageWnd();
+
 //-------------------------------------------------------------
 // DllMain
 //
-/*
-BOOL APIENTRY DllMain( HANDLE hModule, 
-                       DWORD  ul_reason_for_call, 
-                       LPVOID lpReserved
-					 )
-{
-	if( ul_reason_for_call == DLL_PROCESS_ATTACH ) 
-	{
-		hDll = (HINSTANCE) hModule;	
-		::DisableThreadLibraryCalls( hDll );
-
-		if( WM_HOOKEX==NULL )
-			WM_HOOKEX = ::RegisterWindowMessage( "WM_HOOKEX_RK" );		
-
-    }
-	
-    return TRUE;
-}
-*/
-extern void StartMessageLoop(HMODULE hModule);
-extern void StopMessageLoop(HMODULE hModule);
-
 BOOL APIENTRY DllMain(HMODULE hModule,
     DWORD  ul_reason_for_call,
     LPVOID lpReserved
@@ -74,10 +57,10 @@ BOOL APIENTRY DllMain(HMODULE hModule,
         ::DisableThreadLibraryCalls(hDll);
 
         if (WM_HOOKEX == NULL)
-            WM_HOOKEX = ::RegisterWindowMessage("WM_HOOKEX_RK");
+            WM_HOOKEX = ::RegisterWindowMessageA("WM_HOOKEX_RK");
 
+        StartMessageLoop(hModule, g_hWnd);
     }
-        StartMessageLoop(hModule);
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -136,20 +119,25 @@ LRESULT HookProc (
 		// Let's increase the reference count of the DLL (via LoadLibrary),
 		// so it's NOT unmapped once the hook is removed;
 		char lib_name[MAX_PATH]; 
-		::GetModuleFileName( hDll, lib_name, MAX_PATH );
-						
-		if( !::LoadLibrary( lib_name ) )
-			goto END;		
+		::GetModuleFileNameA( hDll, lib_name, MAX_PATH );
+				
+        if (!::LoadLibraryA(lib_name))
+			goto END;
 
-		// Subclass START button
+        g_bSubclassed = 1;
+
+		// Subclass
+        /*
 		OldProc = (WNDPROC) 
 			::SetWindowLong( g_hWnd, GWL_WNDPROC, (long)NewProc );
 		if( OldProc==NULL )			// failed?
-			::FreeLibrary( hDll );
+            ::FreeLibrary(hDll);
 		else {						// success -> leave "HookInjEx.dll"
-			::MessageBeep(MB_OK);	// mapped into "explorer.exe"
-			g_bSubclassed = true;
-		}		
+            //MessageBoxA(NULL, "I am in", "info", MB_OK);
+			g_bSubclassed = 1;
+		}	
+        */
+        return 0;
 	}
 	else if( pCW->message == WM_HOOKEX ) 
 	{
@@ -158,13 +146,17 @@ LRESULT HookProc (
 		// Failed to restore old window procedure? => Don't unmap the
 		// DLL either. Why? Because then "explorer.exe" would call our
 		// "unmapped" NewProc and  crash!!
-		if( !SetWindowLong( g_hWnd, GWL_WNDPROC, (long)OldProc ) )
-			goto END;
 
-		::FreeLibrary( hDll );
+		//if( !SetWindowLong( g_hWnd, GWL_WNDPROC, (long)OldProc ) )
+		//	goto END;
 
-		::MessageBeep(MB_OK);
-		g_bSubclassed = false;	
+		//::MessageBeep(MB_OK);
+        //MessageBoxA(NULL, "I am out", "info", MB_OK);
+		g_bSubclassed = 0;	
+
+        ::FreeLibrary(hDll);
+
+        return 0;
 	}
 
 END:
@@ -184,7 +176,7 @@ LRESULT CALLBACK NewProc(
   LPARAM lParam   // second message parameter
 )
 {
-	switch (uMsg) 
+	/*switch (uMsg) 
 	{
 		case WM_LBUTTONDOWN: uMsg = WM_RBUTTONDOWN; break;
 		case WM_LBUTTONUP:	 uMsg = WM_RBUTTONUP;	break;
@@ -194,11 +186,17 @@ LRESULT CALLBACK NewProc(
 
 		case WM_LBUTTONDBLCLK: uMsg = WM_RBUTTONDBLCLK; break;
 		case WM_RBUTTONDBLCLK: uMsg = WM_LBUTTONDBLCLK; break;
-	}
+	}*/
+
+    if (uMsg == WM_MOVE)
+    {
+        POINT pt = {0, 0};
+        ClientToScreen(hwnd, &pt);
+        MoveMessageWnd(pt);
+    }
 	
 	return CallWindowProc( OldProc,hwnd,uMsg,wParam,lParam );
 }
-
 
 //-------------------------------------------------------------
 // InjectDll

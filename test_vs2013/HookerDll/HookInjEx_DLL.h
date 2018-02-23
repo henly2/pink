@@ -18,7 +18,6 @@ Notice:	If this code works, it was written by Robert Kuster.
 #define HOOKDLL_API __declspec(dllimport)
 #endif
 
-
 extern int HOOKDLL_API g_bSubclassed;
 HOOKDLL_API int InjectDll( HWND hWnd );
 HOOKDLL_API int UnmapDll();

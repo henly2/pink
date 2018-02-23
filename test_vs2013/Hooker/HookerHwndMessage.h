@@ -14,10 +14,13 @@
 
 using namespace hook;
 
+std::string g_tips;
+
 class SimpleHwndMessage
 {
     HINSTANCE g_hinst;
     HWND g_hwnd;
+    unsigned int g_msg;
 
     DWORD g_pid;
     std::string g_processname;
@@ -27,6 +30,7 @@ public:
     SimpleHwndMessage()
         : g_hinst(NULL)
         , g_hwnd(NULL)
+        , g_msg(0)
         , g_pid(0)
     {
         s_SimpleHwndMessage = this;
@@ -37,12 +41,9 @@ public:
 
 public:
     // 创建消息窗口
-    bool Create(HINSTANCE hinstance, DWORD pid, HMODULE hmoudle, HWND parent = NULL)
+    bool Create(HINSTANCE hinstance)
     {
         g_hinst = hinstance;
-
-        g_pid = pid;
-        g_processname = GetModuleName(hmoudle);
 
         // register class
         WNDCLASSEXA wex = { 0 };
@@ -64,7 +65,7 @@ public:
         // create window
         g_hwnd = CreateWindowA(CLASS_NAME_HOST, NULL, WS_POPUP | WS_THICKFRAME,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            parent, NULL, g_hinst, NULL);
+            NULL, NULL, g_hinst, NULL);
         if (g_hwnd == NULL)
         {
             return false;
@@ -79,8 +80,28 @@ public:
         SetWindowPos(g_hwnd, HWND_TOPMOST, l, t, w, h, SWP_SHOWWINDOW);
         UpdateWindow(g_hwnd);
 
-        apihook::StackWalkerIPC::Inst().EnableRemote(pid);
+        if (g_msg == 0)
+        {
+            g_msg = RegisterWindowMessage("WM_HOOKER_SS");
+        }
+
         return true;
+    }
+
+    void SetTarget(DWORD pid, HMODULE hmoudle)
+    {
+        g_pid = pid;
+        if (pid == 0)
+        {
+            g_processname.clear();
+            apihook::StackWalkerIPC::Inst().DisableRemote();
+        }
+        else
+        {
+            g_processname = GetModuleName(hmoudle);
+            apihook::StackWalkerIPC::Inst().EnableRemote(pid);
+        }
+        
     }
 
     void Finish()
@@ -146,6 +167,8 @@ public:
             return 0;
         }
 
+        g_tips = "HandleIPCHost2";
+
         return 0;
     }
 
@@ -155,19 +178,29 @@ public:
         PAINTSTRUCT ps;
         HDC hdc;
 
+        if (nMsg == s_SimpleHwndMessage->g_msg)
+        {
+            s_SimpleHwndMessage->HandleIPCHost2(wParam, lParam);
+            InvalidateRect(hWnd, NULL, TRUE);
+
+            return 0;
+        }
+
         switch (nMsg)
         {
         case WM_IPC_TOHOST:
             s_SimpleHwndMessage->HandleIPCHost(wParam, lParam);
             break;
-        case WM_IPC_TOHOST2:
-            s_SimpleHwndMessage->HandleIPCHost2(wParam, lParam);
-            break;
         case WM_PAINT:
             hdc = BeginPaint(hWnd, &ps);
             // TODO:  在此添加任意绘图代码...
             {
+                std::string text = "hooker: ";
+                text += g_tips;
 
+                RECT rt;
+                GetClientRect(hWnd, &rt);
+                DrawTextA(hdc, text.c_str(), text.length(), &rt, 0);
             }
             EndPaint(hWnd, &ps);
             break;
@@ -179,68 +212,3 @@ public:
     }
 };
 SimpleHwndMessage* SimpleHwndMessage::s_SimpleHwndMessage = NULL;
-
-//////////////////////////////////////////////////////////////////////////
-static SimpleHwndMessage* g_hwndmsg = NULL;
-
-static HINSTANCE g_hinstance = NULL;
-static DWORD g_pid = NULL;
-static HMODULE g_hmoudle = NULL;
-static HWND g_parent = NULL;
-
-
-static HANDLE g_hthread = NULL;
-static HANDLE g_hexit = NULL;
-static DWORD WINAPI MessageThread(LPVOID pVoid)
-{
-    g_hwndmsg->Create(g_hinstance, g_pid, g_hmoudle, g_parent);
-
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)){
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    g_hwndmsg->Finish();
-
-    if (g_hexit != NULL){
-        SetEvent(g_hexit);
-    }
-    return 0;
-}
-
-static void StartMessageLoop(HINSTANCE hinstance, DWORD pid, HMODULE hmoudle, HWND parent = NULL)
-{
-    g_hinstance = hinstance;
-    g_pid = pid;
-    g_hmoudle = hmoudle;
-    g_parent = parent;
-
-    g_hwndmsg = new SimpleHwndMessage;
-
-    g_hexit = CreateEventA(NULL, FALSE, FALSE, NULL);
-    g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
-}
-
-static void StopMessageLoop()
-{
-    if (g_hwndmsg != NULL)
-        PostMessage(g_hwndmsg->GetHWND(), WM_QUIT, NULL, NULL);
-
-    if (g_hexit != NULL){
-        WaitForSingleObject(g_hexit, INFINITE);
-        CloseHandle(g_hexit);
-        g_hexit = NULL;
-    }
-
-    if (g_hthread != NULL){
-        CloseHandle(g_hthread);
-        g_hthread = NULL;
-    }
-
-    if (g_hwndmsg != NULL)
-    {
-        delete g_hwndmsg;
-        g_hwndmsg = NULL;
-    }
-}

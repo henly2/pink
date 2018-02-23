@@ -9,17 +9,16 @@
 #pragma comment(lib, "Psapi.lib")
 
 #include <iostream>
-
 using namespace std;
 
-#include "common.h"
+#include "../Hooker/common.h"
 using namespace hook;
 
 #include "..\HookerDLL\HookInjEx_DLL.h"
 #pragma comment(lib, "../debug/HookerDll.lib")
 
-#include "HookerHwndMessage.h"
-static SimpleHwndMessage g_hwndmsg;
+#include "../source/apihook/APIHook2.hpp"
+#include "../source/apihook/memory/MemoryHook.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 DWORD FindProcByName(LPCSTR lpName)
@@ -116,6 +115,10 @@ HWND FindTargetHwnd()
     HWND hwnd = NULL;
 
     hwnd = FindWindowA(CLASS_NAME_DLL, NULL);
+    if (hwnd == NULL)
+    {
+        hwnd = FindWindowA(NULL, CLASS_NAME_DLL);
+    }
 
     return hwnd;
 }
@@ -125,6 +128,10 @@ HWND FindHostHwnd()
     HWND hwnd = NULL;
 
     hwnd = FindWindowA(CLASS_NAME_HOST, NULL);
+    if (hwnd == NULL)
+    {
+        hwnd = FindWindowA(NULL, CLASS_NAME_HOST);
+    }
 
     return hwnd;
 }
@@ -182,125 +189,6 @@ void attach(std::vector<std::string>& vec)
         std::cout << "###Err: process id or name...\n";
         return;
     }
-    
-    HANDLE hTarget = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-    if (NULL == hTarget)
-    {
-        std::cout << "###Err: Can't Open target process!\n";
-        return;
-    }
-
-    //获取LoadLibraryW和FreeLibrary在宿主进程中的入口点地址
-    HMODULE hKernel32 = GetModuleHandle(_T("Kernel32"));
-    LPTHREAD_START_ROUTINE pLoadLib = (LPTHREAD_START_ROUTINE)
-        GetProcAddress(hKernel32, "LoadLibraryA");
-    if (NULL == pLoadLib)
-    {
-        std::cout << "Library procedure not found: " << GetLastError() << std::endl;
-        CloseHandle(hTarget);
-        return;
-    }
-
-    std::string hookerdll = GetModuleDir(GetModuleHandleA(NULL));
-    hookerdll += "\\";
-    hookerdll += "hookerdll.dll";
-    CHAR szPath[MAX_PATH] = {0};
-    strcpy_s(szPath, hookerdll.c_str());
-    //在宿主进程中为LoadLibraryW的参数分配空间，并将参数值写入
-    LPVOID lpMem = VirtualAllocEx(hTarget, NULL, sizeof(szPath),
-        MEM_COMMIT, PAGE_READWRITE);
-    if (NULL == lpMem)
-    {
-        std::cout << "Can't alloc memory block: " << GetLastError() << std::endl;
-        CloseHandle(hTarget);
-        return;
-    }
-
-    // 参数即为要注入的DLL的文件路径
-    if (!WriteProcessMemory(hTarget, lpMem, (void*)szPath, sizeof(szPath), NULL))
-    {
-        std::cout << "Can't write parameter to memory: " << GetLastError() << std::endl;
-        VirtualFreeEx(hTarget, lpMem, sizeof(szPath), MEM_RELEASE);
-        CloseHandle(hTarget);
-        return;
-    }
-
-    //创建信号量，DLL代码可以通过ReleaseSemaphore来通知主程序清理
-    //==HANDLE hSema = CreateSemaphore(NULL, 0, 1, _T("Global\\InjHack"));
-
-    //将DLL注入宿主进程
-    HANDLE hThread = CreateRemoteThread(hTarget, NULL, 0, pLoadLib, lpMem, 0, NULL);
-
-    //释放宿主进程内的参数内存
-    VirtualFreeEx(hTarget, lpMem, sizeof(szPath), MEM_RELEASE);
-
-    if (NULL == hThread)
-    {
-        std::cout << "Can't create remote thread: " << GetLastError() << std::endl;
-        CloseHandle(hTarget);
-        return;
-    }
-
-    //等待DLL信号量或宿主进程退出
-    WaitForSingleObject(hThread, INFINITE);
-    /*==
-    HANDLE hObj[2] = { hTarget, hSema };
-    if (WAIT_OBJECT_0 == WaitForMultipleObjects(2, hObj, FALSE, INFINITE))
-    {
-        cout << "Target process exit." << endl;
-        CloseHandle(hTarget);
-        return;
-    }
-    CloseHandle(hSema);
-
-    //根据线程退出代码获取DLL的Module ID
-    DWORD dwLibMod;
-    if (!GetExitCodeThread(hThread, &dwLibMod))
-    {
-        cout << "Can't get return code of LoadLibrary: " << GetLastError() << endl;
-        CloseHandle(hThread);
-        CloseHandle(hTarget);
-        return;
-    }==*/
-
-    //++
-    if (!GetExitCodeThread(hThread, &g_dll))
-    {
-        cout << "Can't get return code of LoadLibrary: " << GetLastError() << endl;
-        CloseHandle(hThread);
-        CloseHandle(hTarget);
-        return;
-    }
-
-    //关闭线程句柄
-    CloseHandle(hThread);
-    //++
-    g_htarget = hTarget;
-
-    std::cout << "attach finish..., module = " << g_dll << std::endl;
-}
-void attach2(std::vector<std::string>& vec)
-{
-    std::cout << "attach..." << std::endl;
-    if (g_htarget != NULL)
-    {
-        std::cout << "###Err:has attach" << std::endl;
-        return;
-    }
-
-    if (vec.size() < 2){
-        errinput();
-        return;
-    }
-
-    int pid = atoi(vec[1].c_str());
-    if (pid == 0){
-        pid = FindProcByName(vec[1].c_str());
-    }
-    if (pid == 0){
-        std::cout << "###Err: process id or name...\n";
-        return;
-    }
 
     HANDLE hTarget = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (NULL == hTarget)
@@ -315,7 +203,7 @@ void attach2(std::vector<std::string>& vec)
     //++
     g_htarget = hTarget;
 
-    g_hwndmsg.SetTarget(pid, (HMODULE)g_htarget);
+    apihook::StackWalkerIPC::Inst().EnableRemote(pid);
 
     std::cout << "attach finish..., module = " << g_dll << std::endl;
 }
@@ -329,48 +217,7 @@ void detach(std::vector<std::string>& vec)
         return;
     }
 
-    HMODULE hKernel32 = GetModuleHandle(_T("Kernel32"));
-    LPTHREAD_START_ROUTINE pFreeLib = (LPTHREAD_START_ROUTINE)
-        GetProcAddress(hKernel32, "FreeLibrary");
-    if (NULL == pFreeLib)
-    {
-        std::cout << "Library procedure not found: " << GetLastError() << std::endl;
-        CloseHandle(g_htarget);
-        g_htarget = NULL;
-        return;
-    }
-
-    //再次注入FreeLibrary代码以释放宿主进程加载的注入体DLL
-    HANDLE hThread = CreateRemoteThread(g_htarget, NULL, 0, pFreeLib, (void*)g_dll, 0, NULL);
-    if (NULL == hThread)
-    {
-        cout << "Can't call FreeLibrary: " << GetLastError() << endl;
-        CloseHandle(g_htarget);
-        g_htarget = NULL;
-        return;
-    }
-    WaitForSingleObject(hThread, INFINITE);
-
-    CloseHandle(hThread);
-
-    CloseHandle(g_htarget);
-    g_htarget = NULL;
-    g_dll = 0;
-
-    std::cout << "detach finish..." << std::endl;
-    return;
-}
-void detach2(std::vector<std::string>& vec)
-{
-    std::cout << "detach..." << std::endl;
-
-    if (g_htarget == NULL)
-    {
-        std::cout << "###Err:no attach" << std::endl;
-        return;
-    }
-
-    g_hwndmsg.SetTarget(0, NULL);
+    apihook::StackWalkerIPC::Inst().DisableRemote();
 
     UnmapDll();
 
@@ -476,7 +323,7 @@ void me(std::vector<std::string>& vec)
         return;
     }
 
-    int value = 0;// compose_gdiids(vec[1]);
+    int value = atoi(vec[1].c_str());
     HWND ht = FindTargetHwnd();
     if (ht == NULL)
     {
@@ -493,7 +340,7 @@ void md(std::vector<std::string>& vec)
         return;
     }
 
-    int value = 0;// compose_gdiids(vec[1]);
+    int value = atoi(vec[1].c_str());
     HWND ht = FindTargetHwnd();
     if (ht == NULL)
     {
@@ -525,10 +372,10 @@ bool doonce(const std::string& input)
         listprocess();
         break;
     case Func_attach:
-        attach2(vec);
+        attach(vec);
         break;
     case Func_detach:
-        detach2(vec);
+        detach(vec);
         break;
     case Func_quit:
         detach(vec);
@@ -559,27 +406,38 @@ bool doonce(const std::string& input)
     return bquit;
 }
 
-HANDLE g_hthread = NULL;
-DWORD WINAPI MessageThread(LPVOID pVoid)
-{
-    bool bquit = false;
-    std::string input;
-    while (!bquit){
-        input.clear();
-        std::cout << ">";
-        std::getline(std::cin, input);
-
-        bquit = doonce(input);
+//////////////////////////////////////////////////////////////////////////
+HANDLE g_hconsole = INVALID_HANDLE_VALUE;
+bool initconsole(){
+    if (g_hconsole != INVALID_HANDLE_VALUE)
+    {
+        return true;
     }
 
-    PostMessage(g_hwndmsg.GetHWND(), WM_QUIT, NULL, NULL);
-    return 0;
+    if (!AllocConsole())
+    {
+        return false;
+    }
+
+    g_hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (g_hconsole == INVALID_HANDLE_VALUE)
+    {
+        return false;
+    }
+    SetConsoleTitleA("Debugger");
+    return true;
+}
+
+void uninitconsole()
+{
+    g_hconsole = NULL;
+    FreeConsole();
 }
 
 //////////////////////////////////////////////////////////////////////////
-int _tmain(int argc, _TCHAR* argv[])
+int inithooker()
 {
-    TestFunc();
+    //initconsole();
 
     init_funcid();
     init_gdiid();
@@ -591,20 +449,21 @@ int _tmain(int argc, _TCHAR* argv[])
 
     std::cout << "Support GDIs:\n";
     std::cout << g_all_gdiitems << "\n";
-
-    g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
-
-    //StartMessageLoop(GetModuleHandleA(NULL), pid, (HMODULE)g_htarget, NULL);
-    g_hwndmsg.Create(GetModuleHandleA(NULL));
-
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)){
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    g_hwndmsg.Finish();
     
 	return 0;
 }
 
+void uninithooker()
+{
+    //uninitconsole();
+}
+
+HANDLE gettarget()
+{
+    return g_htarget;
+}
+
+void docommand(const std::string& input)
+{
+    doonce(input);
+}

@@ -6,6 +6,9 @@
 
 #include "../source/cpt/CrossProcessText.h"
 
+#include "..\HookerDLL\HookInjEx_DLL.h"
+#pragma comment(lib, "../debug/HookerDll.lib")
+
 #define MAX_LOADSTRING 100
 
 // 全局变量: 
@@ -32,6 +35,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
  	// TODO:  在此放置代码。
 	MSG msg;
 	HACCEL hAccelTable;
+
+    TestFunc();
 
 	// 初始化全局字符串
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -147,13 +152,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case IDM_ABOUT:
 			//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            {
-                for (int i = 0; i < 100; i++)
-                {
-                    HPEN myPen1;
-                    myPen1 = ::CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-                }
-            }
+            TestFunc();
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);

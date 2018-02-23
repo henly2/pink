@@ -96,6 +96,16 @@ namespace apihook {
         {
             classname_ = classname;
             msg_ = msg;
+            hwnd_ = FindWindowA(classname_.c_str(), NULL);
+            if (hwnd_ == NULL)
+            {
+                hwnd_ = FindWindowA(NULL, classname_.c_str());
+            }
+            if (hwnd_ == NULL)
+            {
+                return false;
+            }
+
             return OpenSharedMemory();
         }
 
@@ -157,6 +167,11 @@ namespace apihook {
         
         bool OpenSharedMemory()
         {
+            if (hMap_ != NULL)
+            {
+                return true;
+            }
+
             std::string strMapName("ContextRemote");                // 内存映射对象名称
             //pBuffer;                                // 共享内存指针
 
@@ -218,12 +233,14 @@ namespace apihook {
     public:
         LRESULT NotifyRemoteWalker(const ContextIPC& cs)
         {
+            if (hwnd_ == NULL)
+            {
+                return -1;
+            }
             ScopedLock lock(cs_lock_);
 
             StackWalkerIPC::Inst().WriteSharedMemory(cs);
-
-            HWND hh = FindWindowA(classname_.c_str(), NULL);
-            return ::SendMessage(hh, msg_, (WPARAM)NULL, (LPARAM)NULL);
+            return ::SendMessage(hwnd_, msg_, (WPARAM)NULL, (LPARAM)NULL);
         }
 
         std::string WalkerRemote(const ContextIPC& cs)
@@ -234,7 +251,7 @@ namespace apihook {
             }
             
             walker_->out.clear();
-            walker_->ShowCallstack(hThread);
+            walker_->ShowSimpleCallstack(hThread);
 
             std::stringstream ss;
             ss << "\n";
@@ -247,6 +264,13 @@ namespace apihook {
             return ss.str();
         }
     
+        void SetFilterThread(int filterthread){
+            filter_thread_ = filterthread;
+        }
+
+        bool IsFilterThread(){
+            return filter_thread_ == 0 || GetCurrentThreadId() == filter_thread_;
+        }
     private:
         StackWalkerIPC(void)
             : pid_(0)
@@ -254,7 +278,9 @@ namespace apihook {
             , hMap_(NULL)
             , pBuffer_(NULL)
             , walker_(NULL)
+            , hwnd_(NULL)
             , msg_(0)
+            , filter_thread_(0)
         {
 
         }
@@ -268,6 +294,10 @@ namespace apihook {
         DWORD pid_;
         HANDLE hprocess_;
 
+        int filter_thread_;
+
+
+        HANDLE hEvent_;
         HANDLE hMap_;
         LPVOID pBuffer_;
 
@@ -276,6 +306,7 @@ namespace apihook {
         CSLock cs_lock_;
 
         std::string classname_;
+        HWND hwnd_;
         unsigned int msg_;
     };
 

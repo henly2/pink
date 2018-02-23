@@ -250,6 +250,7 @@ public:
     {
         ScopedLock lock(cs_lock_);
         type_stacks_[type][key] = text;
+        //OutputDebugStringA("add\n");
     }
 
     void Remove(int key)
@@ -261,6 +262,7 @@ public:
             if (it2 != it->second.end())
             {
                 it->second.erase(it2);
+                //OutputDebugStringA("remove\n");
                 break;
             }
         }

@@ -16,10 +16,6 @@ using namespace hook;
 
 HINSTANCE g_hinst = NULL;
 HWND g_hwnd = NULL;
-std::string g_tips;
-
-DWORD g_process_id = 0;
-std::string g_processname;
 class SimpleHwndMessage
 {
 public:
@@ -34,50 +30,46 @@ public:
     // 创建消息窗口
     bool Create(HINSTANCE hinstance, HWND parent = NULL)
     {
-        g_process_id = GetCurrentProcessId();
-        g_processname = GetModuleName(GetModuleHandleA(NULL));
-
         g_hinst = hinstance;
 
         // register class
-        WNDCLASSEXA wex = { 0 };
-        wex.cbSize = sizeof(WNDCLASSEXA);
-
-        wex.style = CS_HREDRAW | CS_VREDRAW;
-       
-        wex.cbClsExtra = 0;
-        wex.cbWndExtra = 0;
-        wex.lpfnWndProc = WndProc;
-        wex.hInstance = g_hinst;
-        wex.lpszClassName = CLASS_NAME_DLL;
-        wex.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-        if ((RegisterClassExA(&wex)) == NULL)
+        WNDCLASSA wndcls;
+        wndcls.cbClsExtra = 0;
+        wndcls.cbWndExtra = 0;
+        wndcls.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        wndcls.hCursor = LoadCursor(NULL, IDC_CROSS);
+        wndcls.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+        wndcls.hInstance = g_hinst;
+        wndcls.lpfnWndProc = WndProc;
+        wndcls.lpszClassName = CLASS_NAME_DLL;
+        wndcls.lpszMenuName = NULL;
+        wndcls.style = CS_HREDRAW | CS_VREDRAW;
+        RegisterClassA(&wndcls);
+        /*
+        wndcls.cbClsExtra = 0;
+        wndcls.cbWndExtra = 0;
+        wndcls.lpfnWndProc = WndProc;
+        wndcls.hInstance = g_hinst;
+        wndcls.lpszClassName = CLASS_NAME_DLL;
+        wndcls.hCursor = LoadCursor(g_hinst, IDC_ARROW);
+        wndcls.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wndcls.style = CS_HREDRAW | CS_VREDRAW;
+        if ((RegisterClassA(&wndcls)) == NULL)
         {
             return false;
-        }
+        }*/
         // create window
-        g_hwnd = CreateWindowA(CLASS_NAME_DLL, NULL, WS_POPUP | WS_THICKFRAME,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            parent, NULL, g_hinst, NULL);
+        g_hwnd = CreateWindowExA(0, CLASS_NAME_DLL, CLASS_NAME_DLL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0, g_hinst, 0);
         if (g_hwnd == NULL)
         {
             return false;
         }
 
-        int w = 300, h = 50;
-        HWND hd = GetDesktopWindow();
-        RECT rt;
-        GetClientRect(hd, &rt);
-        int l = rt.right / 2 - w / 2;
-        int t = 0;
-        SetWindowPos(g_hwnd, HWND_TOPMOST, l, t, w, h, SWP_SHOWWINDOW);
         UpdateWindow(g_hwnd);
 
         apihook::StackWalker::Inst().Enable();
         apihook::gdi_base::EnableHook();
 
-        apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
         return true;
     }
 
@@ -101,6 +93,11 @@ public:
 
         apihook::memory_heap::DisableHook();
         apihook::StackWalkerIPC::Inst().DisableLocal();
+
+        if (g_hwnd != NULL){
+            DestroyWindow(g_hwnd);
+            g_hwnd = NULL;
+        }
     }
 
     // 获取窗口
@@ -113,9 +110,6 @@ private:
 #define HE_IS_GDIID(value, item) if (IS_GDIID(value, item))   \
         { \
             apihook::gdi_##item::EnableHook();\
-            g_tips = "enable ";\
-            g_tips += #item;\
-            InvalidateRect(g_hwnd, NULL, TRUE);\
         }
     static void he(int value)
     {  
@@ -131,9 +125,6 @@ private:
 #define HD_IS_GDIID(value, item) if (IS_GDIID(value, item))   \
         { \
             apihook::gdi_##item::DisableHook();\
-            g_tips = "disable ";\
-            g_tips += #item;\
-            InvalidateRect(g_hwnd, NULL, TRUE);\
         }
     static void hd(int value)
     {
@@ -148,35 +139,29 @@ private:
     }
     static void clear()
     {
-        g_tips = "clear...";
         apihook::gdi_base::MyStacks_base::Inst().Clear();
         apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
         apihook::gdi_dc::MyStacks_deletedc::Inst().Clear();
-
-        g_tips = "clear done...";
-        InvalidateRect(g_hwnd, NULL, TRUE);
     }
     static void dump()
     {
-        g_tips = "dump...";
-        InvalidateRect(g_hwnd, NULL, TRUE);
-
         std::string dlldir = GetModuleDir(g_hinst);
+
+        HMODULE hProcess = GetModuleHandle(NULL);
+        std::string proname = GetModuleName(hProcess);
         dlldir += "\\";
-        dlldir += g_processname;
+        dlldir += proname;
         dlldir += "_";
 
         apihook::gdi_base::MyStacks_base::Inst().Dump(dlldir + "base.leak");
         apihook::gdi_dc::MyStacks_relasedc::Inst().Dump(dlldir + "releasedc.leak");
         apihook::gdi_dc::MyStacks_deletedc::Inst().Dump(dlldir + "deletedc.leak");
-
-        g_tips = "dump done...";
-        InvalidateRect(g_hwnd, NULL, TRUE);
     }
 
     static void me(int value)
     {
-        apihook::memory_heap::EnableHook();
+        apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
+        apihook::memory_heap::EnableHook(value);
     }
     static void md(int value)
     {
@@ -209,40 +194,14 @@ private:
         default:
             break;
         }
-
-        InvalidateRect(g_hwnd, NULL, TRUE);
     }
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
     {
-        int wmId, wmEvent;
-        PAINTSTRUCT ps;
-        HDC hdc;
-
         switch (nMsg)
         {
         case WM_IPC_TODLL:
             HandleIPC(wParam, lParam);
-            break;
-        case WM_PAINT:
-            hdc = BeginPaint(hWnd, &ps);
-            // TODO:  在此添加任意绘图代码...
-            {
-                std::string text = "I am In Process ";
-                text += g_processname;
-                text += "--";
-                text += std::to_string(GetCurrentProcessId());
-
-                RECT rt;
-                GetClientRect(hWnd, &rt);
-                rt.bottom /= 2;
-                DrawTextA(hdc, text.c_str(), text.length(), &rt, 0);
-
-                rt.top = rt.bottom;
-                rt.bottom *= 2;
-                DrawTextA(hdc, g_tips.c_str(), g_tips.length(), &rt, 0);
-            }
-            EndPaint(hWnd, &ps);
             break;
         default:
             return DefWindowProc(hWnd, nMsg, wParam, lParam);

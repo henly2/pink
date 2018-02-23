@@ -4,11 +4,38 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 namespace hook{
 
     //////////////////////////////////////////////////////////////////////////
     // tools 
+    // ansi --> wide
+    static std::wstring MBytesToWString(const char* abuf)
+    {
+        int alen = strlen(abuf);
+        int wlen = ::MultiByteToWideChar(CP_ACP, 0, abuf, alen, NULL, 0);
+        wchar_t* wbuf = new wchar_t[wlen + 1];
+        memset(wbuf, 0, (wlen + 1) * sizeof(wchar_t));
+        ::MultiByteToWideChar(CP_ACP, 0, abuf, alen, wbuf, wlen);
+        std::wstring result(wbuf);
+        delete[] wbuf;
+        return result;
+    }
+
+    // wide -- > ansi
+    static std::string WStringToMBytes(const wchar_t* wbuf)
+    {
+        int wlen = wcslen(wbuf);
+        int alen = ::WideCharToMultiByte(CP_ACP, 0, wbuf, wlen, NULL, 0, NULL, NULL);
+        char* abuf = new char[alen + 1];
+        memset((void*)abuf, 0, (alen + 1) * sizeof(char));
+        ::WideCharToMultiByte(CP_ACP, 0, wbuf, wlen, abuf, alen, NULL, NULL);
+        std::string result(abuf);
+        delete[] abuf;
+        return result;
+    }
+
     static void spliter_by_char(const std::string& str, char splitter, std::vector<std::string>& vec)
     {
         std::stringstream ss;

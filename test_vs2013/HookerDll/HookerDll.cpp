@@ -28,12 +28,7 @@ DWORD WINAPI MessageThread(LPVOID pVoid)
     return 0;
 }
 
-void StartMessageLoop(HMODULE hModule)
-{
-    HWND parent = FindWindowA(NULL, "abcd");
-    //g_hwndmsg.Create(g_hModule, parent);
-}
-
+void MoveMessageWnd(POINT pt);
 void StartMessageLoop2(HMODULE hModule)
 {
     g_hModule = hModule;
@@ -41,8 +36,40 @@ void StartMessageLoop2(HMODULE hModule)
     g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
 }
 
+void StartMessageLoop(HMODULE hModule, HWND hParent)
+{
+    // if host process, return;
+    HMODULE hprocess = GetModuleHandle(NULL);
+    std::string pro_name = hook::GetModuleName(hprocess);
+    std::transform(pro_name.begin(), pro_name.end(), pro_name.begin(), tolower);
+    if (pro_name == "hooker.exe"){
+        return;
+    }
+    if (pro_name == "testpink_mfc2.exe"){
+        return;
+    }
+
+    g_hModule = hModule;
+
+    g_hwndmsg.Create(g_hModule, hParent);
+
+    POINT pt = { 0, 0 };
+    ClientToScreen(hParent, &pt);
+    MoveMessageWnd(pt);
+}
+
 void StopMessageLoop(HMODULE hModule)
 {
+    // if host process, return;
+    HMODULE hprocess = GetModuleHandle(NULL);
+    std::string pro_name = hook::GetModuleName(hprocess);
+    std::transform(pro_name.begin(), pro_name.end(), pro_name.begin(), tolower);
+    if (pro_name == "hooker.exe"){
+        return;
+    }
+
+    g_hwndmsg.Finish();
+    /*
     PostMessage(g_hwndmsg.GetHWND(), WM_QUIT, NULL, NULL);
 
     if (g_hexit != NULL){
@@ -54,5 +81,21 @@ void StopMessageLoop(HMODULE hModule)
     if (g_hthread != NULL){
         CloseHandle(g_hthread);
         g_hthread = NULL;
+    }*/
+}
+
+void MoveMessageWnd(POINT pt)
+{
+    HWND hwnd = g_hwndmsg.GetHWND();
+    if (hwnd != NULL)
+    {
+        RECT rt;
+        GetClientRect(hwnd, &rt);
+        SetWindowPos(hwnd, NULL, pt.x-rt.right, pt.y-rt.bottom, 0, 0 , SWP_NOSIZE|SWP_NOZORDER);
     }
+}
+
+HWND GetMessageWnd()
+{
+    return g_hwndmsg.GetHWND();
 }

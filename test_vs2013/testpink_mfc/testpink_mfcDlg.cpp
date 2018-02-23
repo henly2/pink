@@ -13,8 +13,13 @@
 #include "../source/apihook/APIHook.hpp"
 #include "../source/apihook/Gdi/Gdi.hpp"
 
+/*
+#include "../Hooker/common.h"
 #include "../source/apihook/APIHook2.hpp"
 #include "../source/apihook/memory/MemoryHook.hpp"
+using namespace apihook;
+using namespace hook;
+*/
 
 #ifdef _DEBUG
 //#define new DEBUG_NEW
@@ -211,11 +216,9 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 
     // …Ë÷√÷√∂•
-    SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    //SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
-    SetWindowText(_T("abcd"));
-
-    //apihook::StackWalkerIPC::Inst().EnableLocal();
+    //apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
 
 	//apihook::StackWalker::Inst().Enable();
     //apihook::gdi_base::EnableHook();
@@ -373,7 +376,7 @@ void Ctestpink_mfcDlg::OnBnClickedButton1()
     for (int i = 0; i < 1; i++)
     {
         if (i < 1)
-             h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
+            ;// h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
         else
             ;// h[i] = CreateThread(NULL, 0, TestThread2, NULL, 0, NULL);
     }

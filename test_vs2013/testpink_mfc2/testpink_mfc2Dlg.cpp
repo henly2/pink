@@ -7,7 +7,12 @@
 #include "testpink_mfc2Dlg.h"
 #include "afxdialogex.h"
 
+#include <iostream>
+#include <string>
 #include <fstream>
+
+#include "../Hooker/common.h"
+using namespace hook;
 
 #include "../source/apihook/APIHook2.hpp"
 #include "../source/apihook/memory/MemoryHook.hpp"
@@ -16,7 +21,10 @@
 #define new DEBUG_NEW
 #endif
 
-#define WM_IPC2  (WM_USER+10)
+extern int inithooker();
+extern void uninithooker();
+extern void docommand(const std::string& input);
+extern HANDLE gettarget();
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -55,20 +63,30 @@ END_MESSAGE_MAP()
 
 Ctestpink_mfc2Dlg::Ctestpink_mfc2Dlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(Ctestpink_mfc2Dlg::IDD, pParent)
+    , m_commandline(_T(""))
+    , m_filter(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
 void Ctestpink_mfc2Dlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
+    CDialogEx::DoDataExchange(pDX);
+    DDX_Text(pDX, IDC_EDIT1, m_commandline);
+    DDX_Text(pDX, IDC_EDIT2, m_filter);
 }
 
 BEGIN_MESSAGE_MAP(Ctestpink_mfc2Dlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-    ON_MESSAGE(WM_IPC2, OnRecordCallstack)
+    ON_MESSAGE(WM_IPC_TOHOST, IPCToHost)
+    ON_MESSAGE(WM_IPC_TOHOST2, IPCToHost2)
+    ON_BN_CLICKED(IDCANCEL, &Ctestpink_mfc2Dlg::OnBnClickedCancel)
+    ON_BN_CLICKED(IDOK, &Ctestpink_mfc2Dlg::OnBnClickedOk)
+    ON_WM_KEYUP()
+    ON_WM_DESTROY()
+    ON_BN_CLICKED(IDC_BUTTON1, &Ctestpink_mfc2Dlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -103,10 +121,9 @@ BOOL Ctestpink_mfc2Dlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-    SetWindowText(REMOTE_WINDOW_TITLE);
-
 	// TODO:  在此添加额外的初始化代码
-    apihook::StackWalkerIPC::Inst().EnableRemote(3924);
+    SetWindowTextA(GetSafeHwnd(), hook::CLASS_NAME_HOST);
+    inithooker();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -117,8 +134,6 @@ void Ctestpink_mfc2Dlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
-
-        apihook::memory_heap::MyStacks_memory::Inst().Dump("memory.leak");
 	}
 	else
 	{
@@ -162,7 +177,33 @@ HCURSOR Ctestpink_mfc2Dlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-LRESULT Ctestpink_mfc2Dlg::OnRecordCallstack(WPARAM wParam, LPARAM lParam)
+LRESULT Ctestpink_mfc2Dlg::IPCToHost(WPARAM wParam, LPARAM lParam)
+{
+    FUNCID funcid = (FUNCID)wParam;
+    switch (funcid)
+    {
+    case hook::Func_clear:
+        apihook::memory_heap::MyStacks_memory::Inst().Clear();
+        break;
+    case hook::Func_dump:
+    {
+        std::string dlldir = GetModuleDir(GetModuleHandle(NULL));
+        std::string exename = GetModuleName((HMODULE)gettarget());
+        dlldir += "\\";
+        dlldir += exename;
+        dlldir += "_";
+
+        apihook::memory_heap::MyStacks_memory::Inst().Dump(dlldir + "memory.leak");
+    }
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+LRESULT Ctestpink_mfc2Dlg::IPCToHost2(WPARAM wParam, LPARAM lParam)
 {
     apihook::StackWalkerIPC::ContextIPC cs;
     if (false == apihook::StackWalkerIPC::Inst().ReadSharedMemory(cs))
@@ -175,14 +216,54 @@ LRESULT Ctestpink_mfc2Dlg::OnRecordCallstack(WPARAM wParam, LPARAM lParam)
     }
     else if (cs.type == 1)
     {
-        std::string stacks = apihook::StackWalkerIPC::Inst().WalkerRemote(cs);
-        
+        std::string stacks;// = apihook::StackWalkerIPC::Inst().WalkerRemote(cs);
         apihook::memory_heap::MyStacks_memory::Inst().Add("heap", cs.addr, stacks);
 
         return 0;
     }
-
-    
     
     return 0;
+}
+
+void Ctestpink_mfc2Dlg::OnBnClickedCancel()
+{
+    // TODO:  在此添加控件通知处理程序代码
+    CDialogEx::OnCancel();
+}
+
+void Ctestpink_mfc2Dlg::OnBnClickedOk()
+{
+    // TODO:  在此添加控件通知处理程序代码
+    //CDialogEx::OnOK();
+
+    UpdateData(TRUE);
+    if (m_commandline.IsEmpty())
+    {
+        std::cout << "input command first" << std::endl;
+        return;
+    }
+
+    std::string cmdline = hook::WStringToMBytes(m_commandline);
+    m_commandline.Empty();
+    UpdateData(FALSE);
+
+    docommand(cmdline);
+}
+
+void Ctestpink_mfc2Dlg::OnDestroy()
+{
+    CDialogEx::OnDestroy();
+
+    // TODO:  在此处添加消息处理程序代码
+    uninithooker();
+}
+
+
+void Ctestpink_mfc2Dlg::OnBnClickedButton1()
+{
+    // TODO:  在此添加控件通知处理程序代码
+    UpdateData(TRUE);
+
+    m_filter.MakeLower();
+    m_filter2 = hook::WStringToMBytes(m_filter);
 }

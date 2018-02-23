@@ -53,6 +53,9 @@
     <ClCompile Include="..\..\..\third\StackWalker\Main\StackWalker\StackWalker.cpp">
       <Filter>third</Filter>
     </ClCompile>
+    <ClCompile Include="Hooker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="testpink_mfc2.rc">

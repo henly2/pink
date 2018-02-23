@@ -22,6 +22,10 @@ namespace apihook{
             )
         {
             auto data = s_PFN2_HeapAlloc.hookfunc(hHeap, dwFlags, dwBytes);
+            if (!StackWalkerIPC::Inst().IsFilterThread())
+            {
+                return data;
+            }
 
             StackWalkerIPC::ContextIPC cs;
             cs.type = 1;
@@ -40,6 +44,10 @@ namespace apihook{
             )
         {
             auto data = s_PFN2_HeapFree.hookfunc(hHeap, dwFlags, lpMem);
+            if (!StackWalkerIPC::Inst().IsFilterThread())
+            {
+                return data;
+            }
 
             StackWalkerIPC::ContextIPC cs;
             cs.type = -1;
@@ -53,8 +61,10 @@ namespace apihook{
 
 
         //////////////////////////////////////////////////////////////////////////
-        static void EnableHook()
+        static void EnableHook(int filterthread = 0)
         {
+            StackWalkerIPC::Inst().SetFilterThread(filterthread);
+
             ENABLE_HOOKAPI2(HeapFree, _PFN_HeapFree);
             ENABLE_HOOKAPI2(HeapAlloc, _PFN_HeapAlloc);
         }
