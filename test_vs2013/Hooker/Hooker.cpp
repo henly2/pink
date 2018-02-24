@@ -18,9 +18,6 @@ using namespace hook;
 #include "..\HookerDLL\HookInjEx_DLL.h"
 #pragma comment(lib, "../debug/HookerDll.lib")
 
-#include "HookerHwndMessage.h"
-static SimpleHwndMessage g_hwndmsg;
-
 //////////////////////////////////////////////////////////////////////////
 DWORD FindProcByName(LPCSTR lpName)
 {
@@ -315,8 +312,6 @@ void attach2(std::vector<std::string>& vec)
     //++
     g_htarget = hTarget;
 
-    g_hwndmsg.SetTarget(pid, (HMODULE)g_htarget);
-
     std::cout << "attach finish..., module = " << g_dll << std::endl;
 }
 void detach(std::vector<std::string>& vec)
@@ -369,8 +364,6 @@ void detach2(std::vector<std::string>& vec)
         std::cout << "###Err:no attach" << std::endl;
         return;
     }
-
-    g_hwndmsg.SetTarget(0, NULL);
 
     UnmapDll();
 
@@ -559,28 +552,9 @@ bool doonce(const std::string& input)
     return bquit;
 }
 
-HANDLE g_hthread = NULL;
-DWORD WINAPI MessageThread(LPVOID pVoid)
-{
-    bool bquit = false;
-    std::string input;
-    while (!bquit){
-        input.clear();
-        std::cout << ">";
-        std::getline(std::cin, input);
-
-        bquit = doonce(input);
-    }
-
-    PostMessage(g_hwndmsg.GetHWND(), WM_QUIT, NULL, NULL);
-    return 0;
-}
-
 //////////////////////////////////////////////////////////////////////////
 int _tmain(int argc, _TCHAR* argv[])
 {
-    TestFunc();
-
     init_funcid();
     init_gdiid();
 
@@ -592,19 +566,16 @@ int _tmain(int argc, _TCHAR* argv[])
     std::cout << "Support GDIs:\n";
     std::cout << g_all_gdiitems << "\n";
 
-    g_hthread = CreateThread(NULL, 0, MessageThread, NULL, NULL, NULL);
+    bool bquit = false;
+    std::string input;
+    while (!bquit){
+        input.clear();
+        std::cout << ">";
+        std::getline(std::cin, input);
 
-    //StartMessageLoop(GetModuleHandleA(NULL), pid, (HMODULE)g_htarget, NULL);
-    g_hwndmsg.Create(GetModuleHandleA(NULL));
-
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)){
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        bquit = doonce(input);
     }
 
-    g_hwndmsg.Finish();
-    
 	return 0;
 }
 

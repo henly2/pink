@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 
 #include "APIHook.hpp"
@@ -82,12 +83,12 @@ namespace apihook {
 #define DISABLE_HOOKAPI2(real) s_PFN2_##real.UnHook();
 
     //////////////////////////////////////////////////////////////////////////
-    class StackWalkerIPC
+    class StackWalkerIPC__
     {
     public:
-        static StackWalkerIPC& Inst()
+        static StackWalkerIPC__& Inst()
         {
-            static StackWalkerIPC s;
+            static StackWalkerIPC__ s;
             return s;
         }
 
@@ -239,7 +240,7 @@ namespace apihook {
             }
             ScopedLock lock(cs_lock_);
 
-            StackWalkerIPC::Inst().WriteSharedMemory(cs);
+            StackWalkerIPC__::Inst().WriteSharedMemory(cs);
             return ::SendMessage(hwnd_, msg_, (WPARAM)NULL, (LPARAM)NULL);
         }
 
@@ -272,7 +273,7 @@ namespace apihook {
             return filter_thread_ == 0 || GetCurrentThreadId() == filter_thread_;
         }
     private:
-        StackWalkerIPC(void)
+        StackWalkerIPC__(void)
             : pid_(0)
             , hprocess_(NULL)
             , hMap_(NULL)
@@ -282,10 +283,10 @@ namespace apihook {
             , msg_(0)
             , filter_thread_(0)
         {
-
+            memset(threadings_, 0, sizeof(threadings_));
         }
 
-        ~StackWalkerIPC(void)
+        ~StackWalkerIPC__(void)
         {
 
         }
@@ -308,6 +309,143 @@ namespace apihook {
         std::string classname_;
         HWND hwnd_;
         unsigned int msg_;
+
+        int threadings_[200];
+public:
+    bool is_doing(){
+        int tid = GetCurrentThreadId();
+
+        ScopedLock lock(cs_lock_);
+        for (int i = 0; i < 200; i++)
+        {
+            if (threadings_[i] == tid)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    bool in_doing(){
+        int tid = GetCurrentThreadId();
+
+        ScopedLock lock(cs_lock_);
+        for (int i = 0; i < 200; i++)
+        {
+            if (threadings_[i] == tid)
+            {
+                return true;
+            }
+        }
+        for (int i = 0; i < 200; i++)
+        {
+            if (threadings_[i] == 0)
+            {
+                threadings_[i] = tid;
+                break;
+            }
+        }
+
+        return false;
+    }
+    void out_doing(){
+        int tid = GetCurrentThreadId();
+        ScopedLock lock(cs_lock_);
+        for (int i = 0; i < 200; i++)
+        {
+            if (threadings_[i] == tid)
+            {
+                threadings_[i] = 0;
+                break;
+            }
+        }
+    }
     };
 
+    //////////////////////////////////////////////////////////////////////////
+    class StackWalkerIPC
+    {
+    public:
+        static StackWalkerIPC& Inst()
+        {
+            static StackWalkerIPC s;
+            return s;
+        }
+
+    private:
+        StackWalkerIPC(void)
+        {
+            filter_thread_ = 0;
+            memset(threadings_, 0, sizeof(threadings_));
+        }
+
+        ~StackWalkerIPC(void)
+        {
+
+        }
+
+    private:
+        int filter_thread_;
+
+        CSLock cs_lock_;
+        int threadings_[200];
+
+    public:
+        void SetFilterThread(int filterthread){
+            filter_thread_ = filterthread;
+        }
+
+        bool IsFilterThread(){
+            return filter_thread_ == 0 || GetCurrentThreadId() == filter_thread_;
+        }
+
+        bool is_doing(){
+            int tid = GetCurrentThreadId();
+
+            ScopedLock lock(cs_lock_);
+            for (int i = 0; i < 200; i++)
+            {
+                if (threadings_[i] == tid)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        bool in_doing(){
+            int tid = GetCurrentThreadId();
+
+            ScopedLock lock(cs_lock_);
+            for (int i = 0; i < 200; i++)
+            {
+                if (threadings_[i] == tid)
+                {
+                    return true;
+                }
+            }
+            for (int i = 0; i < 200; i++)
+            {
+                if (threadings_[i] == 0)
+                {
+                    threadings_[i] = tid;
+                    break;
+                }
+            }
+
+            return false;
+        }
+        void out_doing(){
+            int tid = GetCurrentThreadId();
+            ScopedLock lock(cs_lock_);
+            for (int i = 0; i < 200; i++)
+            {
+                if (threadings_[i] == tid)
+                {
+                    threadings_[i] = 0;
+                    break;
+                }
+            }
+        }
+    };
 }

@@ -115,125 +115,237 @@ public:
 class StackWalker
 {
 public:
-    static StackWalker& Inst()
-    {
-        static StackWalker s;
-        return s;
-    }
-
-	bool Enable()
-	{
-        if (hprocess_ != NULL)
-            return true;
-
-        hprocess_ = GetCurrentProcess();
-
-        // Initialize dbghelp library.  
-        if (!SymInitialize(hprocess_, NULL, TRUE)) {
-            OutputDebugStringA("Initialize dbghelp library ERROR!\n");
-
-            CloseHandle(hprocess_);
-            hprocess_ = NULL;
-            return false;
-        }
-
-        return true;
-	}
-
-    void Disable()
-    {
-        if (hprocess_ == NULL)
-            return;
-
-        // Clean up and exit. 
-        SymCleanup(hprocess_);
-
-        CloseHandle(hprocess_);
-        hprocess_ = NULL;
-    }
-
-public:
-    std::string DumpStack()
-    {
-        if (hprocess_ == NULL)
-            return "process is null";
-
-        //UINT max_name_length;              // Max length of symbols' name.
-        CONTEXT context;                   // Store register addresses.
-        STACKFRAME64 stackframe;           // Call stack.
-        HANDLE thread;           // Handle to current process & thread.
-        PSYMBOL_INFO symbol;               // Debugging symbol's information.
-        IMAGEHLP_LINE64 source_info;       // Source information (file name & line number)
-        DWORD displacement;                // Source line displacement.
-        std::ostringstream stack_info_str_stream;
-
-        enum { MAX_NAME_LENGTH = 256 };  // max length of symbols' name.
-        // Initialize PSYMBOL_INFO structure.  
-        // Allocate a properly-sized block.  
-        symbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
-        memset(symbol, 0, sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
-        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);  // SizeOfStruct *MUST BE* set to sizeof(SYMBOL_INFO).  
-        symbol->MaxNameLen = MAX_NAME_LENGTH;
-        // Initialize IMAGEHLP_LINE64 structure.  
-        memset(&source_info, 0, sizeof(IMAGEHLP_LINE64));
-        source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-        // Initialize STACKFRAME64 structure.  
-        RtlCaptureContext(&context);  // Get context.  
-        memset(&stackframe, 0, sizeof(STACKFRAME64));
-        stackframe.AddrPC.Offset = context.Eip;  // Fill in register addresses (EIP, ESP, EBP).  
-        stackframe.AddrPC.Mode = AddrModeFlat;
-        stackframe.AddrStack.Offset = context.Esp;
-        stackframe.AddrStack.Mode = AddrModeFlat;
-        stackframe.AddrFrame.Offset = context.Ebp;
-        stackframe.AddrFrame.Mode = AddrModeFlat;
-        stack_info_str_stream.str("");
-
-        thread = GetCurrentThread();
-
-        int i = 0;
-        stack_info_str_stream << "Call stack: \n";
-        // Enumerate call stack frame.  
-        while (StackWalk64(IMAGE_FILE_MACHINE_I386, hprocess_, thread, &stackframe,
-            &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
-            if (stackframe.AddrFrame.Offset == 0) {  // End reaches.  
-                break;
-            }
-            if (SymFromAddr(hprocess_, stackframe.AddrPC.Offset, NULL, symbol)) {  // Get symbol.  
-                stack_info_str_stream << " ==> " << symbol->Name << "\n";
-            }
-            if (SymGetLineFromAddr64(hprocess_, stackframe.AddrPC.Offset, &displacement, &source_info)) {
-                // Get source information.  
-                stack_info_str_stream << "\t[" << source_info.FileName << ":" << source_info.LineNumber << "]\n";
-            }
-            else {
-                if (GetLastError() == 0x1E7) {  // If err_code == 0x1e7, no symbol was found.  
-                    stack_info_str_stream << "\tNo debug symbol loaded for this function.\n";
-                }
-            }
-        }
-
-        free(symbol);
-        CloseHandle(thread);
-
-        stack_info_str_stream << "StackDumper is cleaned up!\n";
-
-        return stack_info_str_stream.str();
-    }
-
-private:
     StackWalker(void)
-        :hprocess_(NULL)
     {
-
     }
 
     ~StackWalker(void)
     {
-
     }
 
-private:
-    HANDLE hprocess_;
+public:
+    static std::string DumpFullStack(HANDLE _hprocess=NULL, HANDLE _hthread=NULL)
+    {
+        HANDLE hprocess = _hprocess;
+        if (hprocess == NULL)
+            hprocess = GetCurrentProcess();
+
+        HANDLE hthread = _hthread;
+        if (hthread == NULL)
+            hthread = GetCurrentThread();
+
+        std::string str;
+        if (!SymInitialize(hprocess, NULL, TRUE)) 
+        {
+            str = ("Initialize dbghelp library ERROR!\n");
+        }
+        else
+        {
+            //UINT max_name_length;              // Max length of symbols' name.
+            CONTEXT context;                   // Store register addresses.
+            STACKFRAME64 stackframe;           // Call stack.
+            PSYMBOL_INFO symbol;               // Debugging symbol's information.
+            IMAGEHLP_LINE64 source_info;       // Source information (file name & line number)
+            DWORD displacement;                // Source line displacement.
+            std::ostringstream stack_info_str_stream;
+
+            enum { MAX_NAME_LENGTH = 256 };  // max length of symbols' name.
+            // Initialize PSYMBOL_INFO structure.  
+            // Allocate a properly-sized block.  
+            symbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            memset(symbol, 0, sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            symbol->SizeOfStruct = sizeof(SYMBOL_INFO);  // SizeOfStruct *MUST BE* set to sizeof(SYMBOL_INFO).  
+            symbol->MaxNameLen = MAX_NAME_LENGTH;
+            // Initialize IMAGEHLP_LINE64 structure.  
+            memset(&source_info, 0, sizeof(IMAGEHLP_LINE64));
+            source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            // Initialize STACKFRAME64 structure.  
+            RtlCaptureContext(&context);  // Get context.  
+            memset(&stackframe, 0, sizeof(STACKFRAME64));
+            stackframe.AddrPC.Offset = context.Eip;  // Fill in register addresses (EIP, ESP, EBP).  
+            stackframe.AddrPC.Mode = AddrModeFlat;
+            stackframe.AddrStack.Offset = context.Esp;
+            stackframe.AddrStack.Mode = AddrModeFlat;
+            stackframe.AddrFrame.Offset = context.Ebp;
+            stackframe.AddrFrame.Mode = AddrModeFlat;
+            stack_info_str_stream.str("");
+
+            int i = 0;
+            stack_info_str_stream << "Call stack: \n";
+            // Enumerate call stack frame.  
+            while (StackWalk64(IMAGE_FILE_MACHINE_I386, hprocess, hthread, &stackframe,
+                &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+                if (stackframe.AddrFrame.Offset == 0) {  // End reaches.  
+                    break;
+                }
+                if (SymFromAddr(hprocess, stackframe.AddrPC.Offset, NULL, symbol)) {  // Get symbol.  
+                    stack_info_str_stream << " ==> " << symbol->Name << "\n";
+                }
+                if (SymGetLineFromAddr64(hprocess, stackframe.AddrPC.Offset, &displacement, &source_info)) {
+                    // Get source information.  
+                    stack_info_str_stream << "\t[" << source_info.FileName << ":" << source_info.LineNumber << "]\n";
+                }
+                else {
+                    if (GetLastError() == 0x1E7) {  // If err_code == 0x1e7, no symbol was found.  
+                        stack_info_str_stream << "\tNo debug symbol loaded for this function.\n";
+                    }
+                }
+            }
+
+            stack_info_str_stream << "StackDumper is cleaned up!\n";
+            str = stack_info_str_stream.str();
+
+            free(symbol);
+            // Clean up and exit. 
+            SymCleanup(hprocess);
+        }
+        
+        if (_hprocess == NULL)
+            CloseHandle(hprocess);
+
+        if (_hthread == NULL)
+            CloseHandle(hthread);
+
+        return str;
+    }
+
+    static bool DumpSimpleStack(std::list<DWORD64>& ll, HANDLE _hprocess = NULL, HANDLE _hthread = NULL)
+    {
+        HANDLE hprocess = _hprocess;
+        if (hprocess == NULL)
+            hprocess = GetCurrentProcess();
+
+        HANDLE hthread = _hthread;
+        if (hthread == NULL)
+            hthread = GetCurrentThread();
+
+        {
+            //UINT max_name_length;              // Max length of symbols' name.
+            CONTEXT context;                   // Store register addresses.
+            STACKFRAME64 stackframe;           // Call stack.
+            PSYMBOL_INFO symbol;               // Debugging symbol's information.
+            IMAGEHLP_LINE64 source_info;       // Source information (file name & line number)
+
+            enum { MAX_NAME_LENGTH = 256 };  // max length of symbols' name.
+            // Initialize PSYMBOL_INFO structure.  
+            // Allocate a properly-sized block.  
+            symbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            memset(symbol, 0, sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            symbol->SizeOfStruct = sizeof(SYMBOL_INFO);  // SizeOfStruct *MUST BE* set to sizeof(SYMBOL_INFO).  
+            symbol->MaxNameLen = MAX_NAME_LENGTH;
+            // Initialize IMAGEHLP_LINE64 structure.  
+            memset(&source_info, 0, sizeof(IMAGEHLP_LINE64));
+            source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            // Initialize STACKFRAME64 structure.  
+            RtlCaptureContext(&context);  // Get context.  
+            memset(&stackframe, 0, sizeof(STACKFRAME64));
+            stackframe.AddrPC.Offset = context.Eip;  // Fill in register addresses (EIP, ESP, EBP).  
+            stackframe.AddrPC.Mode = AddrModeFlat;
+            stackframe.AddrStack.Offset = context.Esp;
+            stackframe.AddrStack.Mode = AddrModeFlat;
+            stackframe.AddrFrame.Offset = context.Ebp;
+            stackframe.AddrFrame.Mode = AddrModeFlat;
+            //stack_info_str_stream.str("");
+
+            int i = 0;
+            //stack_info_str_stream << "Call stack: \n";
+            // Enumerate call stack frame.  
+            while (StackWalk64(IMAGE_FILE_MACHINE_I386, hprocess, hthread, &stackframe,
+                &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+                if (stackframe.AddrFrame.Offset == 0) {  // End reaches.  
+                    break;
+                }
+                ll.push_back(stackframe.AddrPC.Offset);
+            }
+
+            free(symbol);
+        }
+
+        if (_hprocess == NULL)
+            CloseHandle(hprocess);
+
+        if (_hthread == NULL)
+            CloseHandle(hthread);
+
+        return true;
+    }
+
+    static std::string ParseSimpleStack(const std::list<DWORD64>& ll, HANDLE _hprocess = NULL)
+    {
+        HANDLE hprocess = _hprocess;
+        if (hprocess == NULL)
+            hprocess = GetCurrentProcess();
+
+        std::string str;
+        if (!SymInitialize(hprocess, NULL, TRUE))
+        {
+            str = ("Initialize dbghelp library ERROR!\n");
+        }
+        else
+        {
+            //UINT max_name_length;              // Max length of symbols' name.
+            CONTEXT context;                   // Store register addresses.
+            STACKFRAME64 stackframe;           // Call stack.
+            PSYMBOL_INFO symbol;               // Debugging symbol's information.
+            IMAGEHLP_LINE64 source_info;       // Source information (file name & line number)
+            DWORD displacement;                // Source line displacement.
+            std::ostringstream stack_info_str_stream;
+
+            enum { MAX_NAME_LENGTH = 256 };  // max length of symbols' name.
+            // Initialize PSYMBOL_INFO structure.  
+            // Allocate a properly-sized block.  
+            symbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            memset(symbol, 0, sizeof(SYMBOL_INFO) + (MAX_NAME_LENGTH - 1) * sizeof(TCHAR));
+            symbol->SizeOfStruct = sizeof(SYMBOL_INFO);  // SizeOfStruct *MUST BE* set to sizeof(SYMBOL_INFO).  
+            symbol->MaxNameLen = MAX_NAME_LENGTH;
+            // Initialize IMAGEHLP_LINE64 structure.  
+            memset(&source_info, 0, sizeof(IMAGEHLP_LINE64));
+            source_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            
+            // Initialize STACKFRAME64 structure.  
+//             RtlCaptureContext(&context);  // Get context.  
+//             memset(&stackframe, 0, sizeof(STACKFRAME64));
+//             stackframe.AddrPC.Offset = context.Eip;  // Fill in register addresses (EIP, ESP, EBP).  
+//             stackframe.AddrPC.Mode = AddrModeFlat;
+//             stackframe.AddrStack.Offset = context.Esp;
+//             stackframe.AddrStack.Mode = AddrModeFlat;
+//             stackframe.AddrFrame.Offset = context.Ebp;
+//             stackframe.AddrFrame.Mode = AddrModeFlat;
+            stack_info_str_stream.str("");
+
+            int i = 0;
+            stack_info_str_stream << "Call stack: \n";
+            // Enumerate call stack frame.  
+            for (auto it = ll.begin(); it != ll.end(); it++) {
+                
+                DWORD64 ip = *it;
+                if (SymFromAddr(hprocess, ip, NULL, symbol)) {  // Get symbol.  
+                    stack_info_str_stream << " ==> " << symbol->Name << "\n";
+                }
+                if (SymGetLineFromAddr64(hprocess, ip, &displacement, &source_info)) {
+                    // Get source information.  
+                    stack_info_str_stream << "\t[" << source_info.FileName << ":" << source_info.LineNumber << "]\n";
+                }
+                else {
+                    if (GetLastError() == 0x1E7) {  // If err_code == 0x1e7, no symbol was found.  
+                        stack_info_str_stream << "\tNo debug symbol loaded for this function.\n";
+                    }
+                }
+            }
+
+            stack_info_str_stream << "StackDumper is cleaned up!\n";
+            str = stack_info_str_stream.str();
+
+            free(symbol);
+            // Clean up and exit. 
+            SymCleanup(hprocess);
+        }
+
+        if (_hprocess == NULL)
+            CloseHandle(hprocess);
+
+        return str;
+    }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -243,7 +355,7 @@ public:
     void Add(const std::string& type, int key)
     {
         ScopedLock lock(cs_lock_);
-        type_stacks_[type][key] = apihook::StackWalker::Inst().DumpStack();
+        type_stacks_[type][key] = apihook::StackWalker::DumpFullStack();
     }
 
     void Add(const std::string& type, int key, const std::string& text)
@@ -330,6 +442,100 @@ private:
         static MyStacks_##tag& Inst()\
         {\
             static MyStacks_##tag s;\
+            return s;\
+        }\
+    }\
+
+//////////////////////////////////////////////////////////////////////////
+class MyStacksIPs
+{
+public:
+    void Add(int key)
+    {
+        ScopedLock lock(cs_lock_);
+        std::list<DWORD64> ll;
+        apihook::StackWalker::DumpSimpleStack(ll);
+        stacks_[key] = ll;
+
+        ++all_add_;
+    }
+
+    void Remove(int key)
+    {
+        ScopedLock lock(cs_lock_);
+        auto it2 = stacks_.find((int)key);
+        if (it2 != stacks_.end())
+        {
+            stacks_.erase(it2);
+
+            ++all_remove_;
+        }
+    }
+
+    void Clear()
+    {
+        ScopedLock lock(cs_lock_);
+        stacks_.clear();
+
+        all_add_ = 0;
+        all_remove_ = 0;
+    }
+
+    void Dump(const std::string& path)
+    {
+        ScopedLock lock(cs_lock_);
+        std::ofstream file(path);
+
+        HANDLE hprocess = GetCurrentProcess();
+
+        int allcount = stacks_.size();
+
+        file << "-----------------------------Begin----------------------------\n";
+        file << "Found All: " << allcount << " leak\n";
+        file << "All add: " << all_add_ << " all remove: " << all_remove_ << "\n";
+        file << "--------------------------------------------------------------\n";
+        for (auto it = stacks_.begin(); it != stacks_.end(); it++)
+        {
+            std::string str = apihook::StackWalker::ParseSimpleStack(it->second, hprocess);
+
+            file << "addr: " << it->first << "\n";
+            file << "callstacks:\n";
+            file << str << "\n";
+        }
+        file << "-----------------------------End----------------------------\n";
+
+        file.close();
+
+        CloseHandle(hprocess);
+    }
+
+protected:
+    MyStacksIPs()
+    {
+        all_add_ = 0;
+        all_remove_ = 0;
+    }
+
+    virtual ~MyStacksIPs()
+    {
+    }
+
+private:
+    typedef std::list<DWORD64> STACKIPLIST;
+    std::unordered_map<int, STACKIPLIST> stacks_;
+
+    int all_add_;
+    int all_remove_;
+
+    CSLock cs_lock_;
+};
+
+#define DEFINE_MYSTACKIPS_INST(tag) \
+    class MyStacksIPs_##tag : public MyStacksIPs{\
+    public:\
+        static MyStacksIPs_##tag& Inst()\
+        {\
+            static MyStacksIPs_##tag s;\
             return s;\
         }\
     }\

@@ -183,7 +183,7 @@ LRESULT Ctestpink_mfc2Dlg::IPCToHost(WPARAM wParam, LPARAM lParam)
     switch (funcid)
     {
     case hook::Func_clear:
-        apihook::memory_heap::MyStacks_memory::Inst().Clear();
+        //apihook::memory_heap::MyStacksIPs_memory::Inst().Clear();
         break;
     case hook::Func_dump:
     {
@@ -193,7 +193,7 @@ LRESULT Ctestpink_mfc2Dlg::IPCToHost(WPARAM wParam, LPARAM lParam)
         dlldir += exename;
         dlldir += "_";
 
-        apihook::memory_heap::MyStacks_memory::Inst().Dump(dlldir + "memory.leak");
+        //apihook::memory_heap::MyStacks_memory::Inst().Dump(dlldir + "memory.leak");
     }
         break;
     default:
@@ -205,19 +205,19 @@ LRESULT Ctestpink_mfc2Dlg::IPCToHost(WPARAM wParam, LPARAM lParam)
 
 LRESULT Ctestpink_mfc2Dlg::IPCToHost2(WPARAM wParam, LPARAM lParam)
 {
-    apihook::StackWalkerIPC::ContextIPC cs;
-    if (false == apihook::StackWalkerIPC::Inst().ReadSharedMemory(cs))
+    apihook::StackWalkerIPC__::ContextIPC cs;
+    if (false == apihook::StackWalkerIPC__::Inst().ReadSharedMemory(cs))
         return -1;
 
     if (cs.type == -1)
     {
-        apihook::memory_heap::MyStacks_memory::Inst().Remove(cs.addr);
+        //apihook::memory_heap::MyStacks_memory::Inst().Remove(cs.addr);
         return 0;
     }
     else if (cs.type == 1)
     {
-        std::string stacks;// = apihook::StackWalkerIPC::Inst().WalkerRemote(cs);
-        apihook::memory_heap::MyStacks_memory::Inst().Add("heap", cs.addr, stacks);
+        std::string stacks = apihook::StackWalkerIPC__::Inst().WalkerRemote(cs);
+        //apihook::memory_heap::MyStacks_memory::Inst().Add("heap", cs.addr, stacks);
 
         return 0;
     }

@@ -67,7 +67,6 @@ public:
 
         UpdateWindow(g_hwnd);
 
-        apihook::StackWalker::Inst().Enable();
         apihook::gdi_base::EnableHook();
 
         return true;
@@ -85,14 +84,12 @@ public:
         apihook::gdi_region::DisableHook();
 
         apihook::gdi_base::DisableHook();
-        apihook::StackWalker::Inst().Disable();
 
         apihook::gdi_base::MyStacks_base::Inst().Clear();
         apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
         apihook::gdi_dc::MyStacks_deletedc::Inst().Clear();
 
         apihook::memory_heap::DisableHook();
-        apihook::StackWalkerIPC::Inst().DisableLocal();
 
         if (g_hwnd != NULL){
             DestroyWindow(g_hwnd);
@@ -156,11 +153,12 @@ private:
         apihook::gdi_base::MyStacks_base::Inst().Dump(dlldir + "base.leak");
         apihook::gdi_dc::MyStacks_relasedc::Inst().Dump(dlldir + "releasedc.leak");
         apihook::gdi_dc::MyStacks_deletedc::Inst().Dump(dlldir + "deletedc.leak");
+
+        apihook::memory_heap::MyStacksIPs_memory::Inst().Dump(dlldir + "memory.leak");
     }
 
     static void me(int value)
     {
-        apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
         apihook::memory_heap::EnableHook(value);
     }
     static void md(int value)

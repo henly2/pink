@@ -6,7 +6,7 @@ namespace apihook{
     namespace memory_heap{
         //////////////////////////////////////////////////////////////////////////
         // 定义全局记录
-        DEFINE_MYSTACK_INST(memory);
+        DEFINE_MYSTACKIPS_INST(memory);
 
         //////////////////////////////////////////////////////////////////////////
         // 定义类型和对象
@@ -27,12 +27,20 @@ namespace apihook{
                 return data;
             }
 
+            if (StackWalkerIPC::Inst().in_doing())
+            {
+                return data;
+            }
+            /*
             StackWalkerIPC::ContextIPC cs;
             cs.type = 1;
             cs.addr = (int)data;
             cs.size = dwBytes;     
 
             StackWalkerIPC::Inst().NotifyRemoteWalker(cs);
+            */
+            apihook::memory_heap::MyStacksIPs_memory::Inst().Add((int)data);
+            StackWalkerIPC::Inst().out_doing();
             
             return data;
         }
@@ -49,13 +57,21 @@ namespace apihook{
                 return data;
             }
 
+            if (StackWalkerIPC::Inst().in_doing())
+            {
+                return data;
+            }
+            /*
             StackWalkerIPC::ContextIPC cs;
             cs.type = -1;
             cs.addr = (int)lpMem;
             cs.size = 0;
 
             StackWalkerIPC::Inst().NotifyRemoteWalker(cs);
+            */
 
+            apihook::memory_heap::MyStacksIPs_memory::Inst().Remove((int)lpMem);
+            StackWalkerIPC::Inst().out_doing();
             return data;
         }
 

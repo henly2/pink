@@ -10,16 +10,14 @@
 #include "../source/cpt/CrossProcessComm.h"
 #include "../include/log/console_log.hpp"
 
-#include "../source/apihook/APIHook.hpp"
-#include "../source/apihook/Gdi/Gdi.hpp"
+//#include "../source/apihook/APIHook.hpp"
+//#include "../source/apihook/Gdi/Gdi.hpp"
 
-/*
 #include "../Hooker/common.h"
 #include "../source/apihook/APIHook2.hpp"
 #include "../source/apihook/memory/MemoryHook.hpp"
 using namespace apihook;
 using namespace hook;
-*/
 
 #ifdef _DEBUG
 //#define new DEBUG_NEW
@@ -218,8 +216,6 @@ BOOL Ctestpink_mfcDlg::OnInitDialog()
     // 设置置顶
     //SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
-    //apihook::StackWalkerIPC::Inst().EnableLocal(CLASS_NAME_HOST, WM_IPC_TOHOST2);
-
 	//apihook::StackWalker::Inst().Enable();
     //apihook::gdi_base::EnableHook();
     //apihook::gdi_pen::EnableHook();
@@ -231,6 +227,9 @@ void Ctestpink_mfcDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
+        apihook::memory_heap::MyStacksIPs_memory::Inst().Dump("memory.leak");
+
+        //apihook::memory_heap::DisableHook();
 		//CAboutDlg dlgAbout;
 		//dlgAbout.DoModal();
         // 打印需要通过DeleteObject释放的泄漏地址
@@ -355,12 +354,6 @@ DWORD WINAPI TestThread2(LPVOID pParam)
     for (int i = 0; i < 20; i++)
     {
         void* pp = malloc(20);
-        Sleep(300);
-
-        if (i < 10)
-        {
-            delete pp;
-        }
     }
     return 0;
 }
@@ -370,25 +363,32 @@ void Ctestpink_mfcDlg::OnBnClickedButton1()
     // TODO:  在此添加控件通知处理程序代码
     //apihook::gdi_base::MyStacks_base::Inst().Clear();
     //apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
-    //apihook::memory_heap::EnableHook();
+    apihook::memory_heap::EnableHook();
 
     HANDLE h[2];
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 2; i++)
     {
-        if (i < 1)
-            ;// h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
-        else
-            ;// h[i] = CreateThread(NULL, 0, TestThread2, NULL, 0, NULL);
+        //if (i < 1)
+        //   h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
+        //else
+           h[i] = CreateThread(NULL, 0, TestThread2, NULL, 0, NULL);
     }
-    //WaitForMultipleObjects(2, h, TRUE, INFINITE);
-    
+    WaitForMultipleObjects(2, h, TRUE, INFINITE);
+    for (int i = 0; i < 2; i++)
+    {
+        //if (i < 1)
+        //   h[i] = CreateThread(NULL, 0, TestThread, NULL, 0, NULL);
+        //else
+        CloseHandle(h[i]);
+    }
     int *ppp = new int;
 
     int *pppp = new int;
 
     delete ppp;
 
-    //apihook::memory_heap::DisableHook();
+    //
+    apihook::memory_heap::DisableHook();
 
     return;
 

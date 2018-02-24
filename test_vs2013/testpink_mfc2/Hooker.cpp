@@ -203,8 +203,6 @@ void attach(std::vector<std::string>& vec)
     //++
     g_htarget = hTarget;
 
-    apihook::StackWalkerIPC::Inst().EnableRemote(pid);
-
     std::cout << "attach finish..., module = " << g_dll << std::endl;
 }
 void detach(std::vector<std::string>& vec)
@@ -216,8 +214,6 @@ void detach(std::vector<std::string>& vec)
         std::cout << "###Err:no attach" << std::endl;
         return;
     }
-
-    apihook::StackWalkerIPC::Inst().DisableRemote();
 
     UnmapDll();
 
