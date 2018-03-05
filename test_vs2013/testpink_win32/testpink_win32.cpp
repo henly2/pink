@@ -148,9 +148,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// ·ÖÎö²Ëµ¥Ñ¡Ôñ: 
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            TestFunc();
+        case IDM_ABOUT:
+            //DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+        {
+            char* buf = new char[20];
+        }
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);

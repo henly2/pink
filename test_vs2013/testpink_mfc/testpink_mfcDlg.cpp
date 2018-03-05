@@ -357,14 +357,25 @@ DWORD WINAPI TestThread2(LPVOID pParam)
     }
     return 0;
 }
+DWORD WINAPI TestThread3(LPVOID pParam)
+{
+    apihook::memory_heap::EnableHook();
+    void* pp = malloc(20);
+    apihook::memory_heap::DisableHook();
 
+    apihook::memory_heap::MyStacksIPs_memory::Inst().Dump("memory.leak");
+    return 0;
+}
 void Ctestpink_mfcDlg::OnBnClickedButton1()
 {
     // TODO:  在此添加控件通知处理程序代码
     //apihook::gdi_base::MyStacks_base::Inst().Clear();
     //apihook::gdi_dc::MyStacks_relasedc::Inst().Clear();
-    apihook::memory_heap::EnableHook();
+    //apihook::memory_heap::EnableHook();
+    //apihook::memory_heap::DisableHook();
 
+    CreateThread(NULL, 0, TestThread3, NULL, 0, NULL);
+    /*
     HANDLE h[2];
     for (int i = 0; i < 2; i++)
     {
@@ -386,9 +397,9 @@ void Ctestpink_mfcDlg::OnBnClickedButton1()
     int *pppp = new int;
 
     delete ppp;
-
+    */
     //
-    apihook::memory_heap::DisableHook();
+    
 
     return;
 

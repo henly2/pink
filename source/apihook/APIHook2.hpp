@@ -8,7 +8,7 @@
 
 #include "APIHook.hpp"
 
-// MS Detours
+// MS Detours from http://research.microsoft.com/en-us/projects/detours/
 #include "E:/test_workspace/third/Detours Version 3.0 Build_343/Detours/include/detours.h"
 #include "E:/test_workspace/third/Detours Version 3.0 Build_343/Detours/include/syelog.h"
 #pragma comment (lib, "E:/test_workspace/third/Detours Version 3.0 Build_343/Detours/lib.X86/detours.lib")
