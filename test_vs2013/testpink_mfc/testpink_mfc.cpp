@@ -10,6 +10,54 @@
 //#define new DEBUG_NEW
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+// Json serialize to struct
+// {"a":1, "b":1.2, "c":"cc"}
+#include <string>
+#include <tuple>
+
+template <typename T>
+void FillValue(T value, T value2){
+    *value = *value2;
+}
+
+template<typename T1, typename T2>
+struct SBase{
+    SBase(T1* _t1, T2* _t2){
+        t1 = _t1;
+        t2 = _t2;
+    }
+
+    std::tuple<T1*, T2*> tuple_;
+
+    T1* t1;
+    T2* t2;
+
+    void FromJson(const std::tuple<T1*, T2*>& tup){
+        FillValue(t1, std::get<0>(tup));
+        FillValue(t2, std::get<1>(tup));
+    }
+
+    void ToJson(std::tuple<T1*, T2*>& tup){
+        FillValue(std::get<0>(tup), t1);
+        FillValue(std::get<1>(tup), t2);
+    }
+};
+
+struct STest1
+{
+    int a;
+    double b;
+    std::string c;
+
+    STest1()
+        : ss(&a, &b)
+    {
+    }
+
+    SBase<int, double> ss;
+};
+
 
 // Ctestpink_mfcApp
 
@@ -27,6 +75,22 @@ Ctestpink_mfcApp::Ctestpink_mfcApp()
 
 	// TODO:  在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+
+
+    STest1 aa;
+
+    int a = 100;
+    double b = 1.2;
+    std::tuple<int*, double*> tup(&a, &b);
+
+    aa.ss.FromJson(tup);
+
+    STest1 bb;
+    bb.a = -1;
+    bb.b = 10.22;
+    bb.ss.ToJson(tup);
+
+    OutputDebugStringA("aaa");
 }
 
 

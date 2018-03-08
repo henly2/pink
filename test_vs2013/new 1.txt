@@ -1,0 +1,380 @@
+//////////////////////////////////////////////////////////////////////////
+// Json serialize to struct
+// {"a":1, "b":1.2, "c":"cc"}
+#include <string>
+#include <unordered_map>
+#include <tuple>
+
+#include "SSTools/json/json.h"
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void FromJson(T value, const Json::Value& json){
+    value->From(json);
+}
+template <>
+void FromJson(int* value, const Json::Value& json){
+    *value = json.asInt();
+}
+template <>
+void FromJson(double* value, const Json::Value& json){
+    *value = json.asDouble();
+}
+template <>
+void FromJson(std::string* value, const Json::Value& json){
+    *value = json.asString();
+}
+template <>
+void FromJson(bool* value, const Json::Value& json){
+    *value = json.asBool();
+}
+template <typename T>
+void FromJson(std::list<T>* value, const Json::Value& json){
+    OutputDebugStringA("i am list from\n");
+    for (int i = 0; i < json.size(); i++)
+    {
+        T t;
+        FromJson(&t, json[i]);
+
+        value->push_back(t);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ToJson(T value, Json::Value& json){
+    OutputDebugStringA("i am struct=");
+    OutputDebugStringA(std::to_string((int)value).c_str());
+    OutputDebugStringA("\n");
+    json = value->To();
+}
+template <>
+void ToJson(int* value, Json::Value& json){
+    OutputDebugStringA("i am int to");
+    OutputDebugStringA(std::to_string(*value).c_str());
+    OutputDebugStringA("\n");
+    json = *value;
+}
+template <>
+void ToJson(double* value, Json::Value& json){
+    OutputDebugStringA("i am double to");
+    OutputDebugStringA("\n");
+    json = *value;
+}
+template <>
+void ToJson(std::string* value, Json::Value& json){
+    OutputDebugStringA("i am string to");
+    OutputDebugStringA(value->c_str());
+    OutputDebugStringA("\n");
+    json = *value;
+}
+template <>
+void ToJson(bool* value, Json::Value& json){
+    json = *value;
+}
+template <typename T>
+void ToJson(std::list<T>* value, Json::Value& json){
+    OutputDebugStringA("i am list to\n");
+
+    for (auto it = (*value).begin(); it != (*value).end(); it++)
+    {
+        OutputDebugStringA("i am structkkkk=");
+        OutputDebugStringA(std::to_string((int)value).c_str());
+        OutputDebugStringA("\n");
+
+        T& t = (*it);
+        Json::Value j;
+        ToJson(&t, j);
+
+        json.append(j);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename Tuple, size_t N>
+struct tuple_fromjson
+{
+    static void from(Tuple& t, const Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+    {
+        tuple_fromjson<Tuple, N - 1>::from(t, json, tup_map);
+        FromJson(std::get<N - 1>(t), json[tup_map[N - 1]]);
+    }
+
+    static void to(Tuple& t, Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+    {
+        tuple_fromjson<Tuple, N - 1>::to(t, json, tup_map);
+        ToJson(std::get<N - 1>(t), json[tup_map[N - 1]]);
+    }
+};
+// 类模板的特化版本
+template<typename Tuple>
+struct tuple_fromjson<Tuple, 1>
+{
+    static void from(Tuple& t, const Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+    {
+        FromJson(std::get<0>(t), json[tup_map[0]]);
+    }
+
+    static void to(Tuple& t, Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+    {
+        ToJson(std::get<0>(t), json[tup_map[0]]);
+    }
+};
+
+template<typename... Args>
+void F(std::tuple<Args...>& t, const Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+{
+    tuple_fromjson<decltype(t), sizeof...(Args)>::from(t, json, tup_map);
+}
+template<typename... Args>
+void T(std::tuple<Args...>& t, Json::Value& json, std::unordered_map<int, std::string>& tup_map)
+{
+    tuple_fromjson<decltype(t), sizeof...(Args)>::to(t, json, tup_map);
+}
+
+#define DECLARE_TUPLE_22(...) \
+static std::unordered_map<int, std::string>& GetMap(){\
+static std::unordered_map<int, std::string> tup_map;\
+return tup_map;\
+}\
+static MyStruct& GetSS(){\
+static MyStruct ss;\
+return ss;\
+}\
+std::tuple<__VA_ARGS__> tup; \
+void From(const Json::Value& json){\
+F(tup, json, GetMap());\
+}\
+Json::Value To(){\
+Json::Value json;\
+T(tup, json, GetMap());\
+return json;\
+}\
+
+
+void BuildMap(const char* str, std::unordered_map<int, std::string>& mm)
+{
+    std::string tmp;
+    for (int i = 0; str[i]!='\0'; i++)
+    {
+        if (str[i] == '&' || str[i] == ' ')
+        {
+            continue;
+        }
+        else if (str[i] == ',')
+        {
+            mm[mm.size()] = tmp;
+            tmp.clear();
+        }
+        else
+        {
+            tmp.append(1, str[i]);
+        }
+    }
+    if (!tmp.empty())
+    {
+        mm[mm.size()] = tmp;
+        tmp.clear();
+    }
+}
+
+#define DO_ADDVARIABLE_222(...)\
+    if(GetMap().size()==0)\
+    {\
+        tup = std::make_tuple(__VA_ARGS__);\
+        BuildMap(#__VA_ARGS__, GetMap()); \
+    }\
+    
+
+struct MyStruct
+{
+    int a;
+    std::string b;
+    double c;
+    //std::list<int> d;
+
+    DECLARE_TUPLE_22(int*, std::string*, double*);
+
+    MyStruct(){
+        a = 0;
+        c = 0.0;
+        DO_ADDVARIABLE_222(&a, &b, &c);
+
+        OutputDebugStringA("MyStruct this=");
+        OutputDebugStringA(std::to_string((int)this).c_str());
+    }
+};
+
+struct MyStruct2
+{
+    int a;
+    std::string b;
+    double c;
+    std::list<MyStruct> d;
+
+    DECLARE_TUPLE_22(int*, std::string*, double*, std::list<MyStruct>*);
+
+    MyStruct2(){
+        a = 0;
+        c = 0.0;
+        DO_ADDVARIABLE_222(&a, &b, &c, &d);
+    }
+};
+
+void test()
+{
+
+    Json::Value aa;
+    aa["a"] = 1;
+    aa["b"] = "bb";
+    aa["c"] = 1.0;
+
+    Json::Value aaa;
+    aaa.append(1);
+    aaa.append(2);
+    aa["d"] = aaa;
+
+    Json::Value aaa2;
+    aaa2["a"] = 2;
+    aaa2["b"] = "bbb";
+    aaa2["c"] = 2.0;
+
+    Json::Value al;
+    al.append(aa);
+    aaa2["d"] = al;
+    {
+        Json::FastWriter w;
+        std::string oo = w.write(aaa2);
+        OutputDebugStringA(oo.c_str());
+    }
+
+
+    MyStruct2 jj;
+    jj.From(aaa2);
+
+    Json::Value bb = jj.To();
+
+    Json::FastWriter w;
+    std::string oo = w.write(bb);
+    OutputDebugStringA(oo.c_str());
+    /*
+        {
+        Json::Value aa;
+        aa["a"] = 1;
+
+        MyStruct s1;
+        s1.From(aa);
+        OutputDebugStringA("adfs\n");
+
+        Json::Value bb = s1.To();
+
+        Json::FastWriter w;
+        std::string oo = w.write(bb);
+        OutputDebugStringA(oo.c_str());
+        }
+        */
+}
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_TUPLE_2(T1, T2) \
+std::unordered_map<int, std::string> tup_map; \
+std::tuple<T1*, T2*> tup; \
+void From(const Json::Value& json){\
+FromJson(std::get<0>(tup), json[tup_map[0]]);\
+FromJson(std::get<1>(tup), json[tup_map[1]]);\
+}\
+Json::Value To(){\
+Json::Value json;\
+ToJson(std::get<0>(tup), json[tup_map[0]]);\
+ToJson(std::get<1>(tup), json[tup_map[1]]);\
+return json;\
+}\
+
+#define DO_ADDVARIABLE_2(v1, v2)\
+    int _tmp = 0;\
+    tup_map[_tmp++] = #v1;\
+    tup_map[_tmp++] = #v2;\
+    tup = std::make_tuple(&v1, &v2);
+
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_TUPLE_3(T1, T2, T3) \
+std::unordered_map<int, std::string> tup_map; \
+std::tuple<T1*, T2*, T3*> tup; \
+void From(const Json::Value& json){\
+FromJson(std::get<0>(tup), json[tup_map[0]]);\
+FromJson(std::get<1>(tup), json[tup_map[1]]);\
+FromJson(std::get<2>(tup), json[tup_map[2]]);\
+}\
+Json::Value To(){\
+Json::Value json;\
+ToJson(std::get<0>(tup), json[tup_map[0]]);\
+ToJson(std::get<1>(tup), json[tup_map[1]]);\
+ToJson(std::get<2>(tup), json[tup_map[2]]);\
+return json;\
+}\
+
+#define DO_ADDVARIABLE_3(v1, v2, v3)\
+    int _tmp = 0;\
+    tup_map[_tmp++] = #v1;\
+    tup_map[_tmp++] = #v2;\
+    tup_map[_tmp++] = #v3;\
+    tup = std::make_tuple(&v1, &v2, &v3);
+
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_TUPLE_4(T1, T2, T3, T4) \
+std::unordered_map<int, std::string> tup_map; \
+std::tuple<T1*, T2*, T3*, T4*> tup; \
+void From(const Json::Value& json){\
+FromJson(std::get<0>(tup), json[tup_map[0]]);\
+FromJson(std::get<1>(tup), json[tup_map[1]]);\
+FromJson(std::get<2>(tup), json[tup_map[2]]);\
+FromJson(std::get<3>(tup), json[tup_map[3]]);\
+}\
+Json::Value To(){\
+Json::Value json;\
+ToJson(std::get<0>(tup), json[tup_map[0]]);\
+ToJson(std::get<1>(tup), json[tup_map[1]]);\
+ToJson(std::get<2>(tup), json[tup_map[2]]);\
+ToJson(std::get<3>(tup), json[tup_map[3]]);\
+return json;\
+}\
+
+#define DO_ADDVARIABLE_4(v1, v2, v3, v4)\
+    int _tmp = 0;\
+    tup_map[_tmp++] = #v1;\
+    tup_map[_tmp++] = #v2;\
+    tup_map[_tmp++] = #v3;\
+    tup_map[_tmp++] = #v4;\
+    tup = std::make_tuple(&v1, &v2, &v3, &v4);
+
+struct STest1
+{
+    int a;
+    double b;
+
+    struct S2
+    {
+        int a2;
+        int b2;
+
+        S2()
+            : a2(0)
+            , b2(1.0)
+        {
+            DO_ADDVARIABLE_2(a2, b2);
+        }
+
+        DECLARE_TUPLE_2(int, int);
+    };
+    S2 s2;
+
+    S2 s3;
+
+    STest1()
+        : a(0)
+        , b(1.0)
+    {
+        DO_ADDVARIABLE_3(a, b, s2);
+    }
+
+    DECLARE_TUPLE_3(int, double, S2);
+};
